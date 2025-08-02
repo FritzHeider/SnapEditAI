@@ -56,6 +56,7 @@ struct MainTabView: View {
 struct HomeView: View {
     @EnvironmentObject var appState: AppState
     @State private var showingVideoPicker = false
+    @State private var showingPurchaseError = false
     
     var body: some View {
         NavigationView {
@@ -73,7 +74,12 @@ struct HomeView: View {
                             
                             if !appState.isPremiumUser {
                                 Button("Go Pro") {
-                                    // Show premium upgrade
+                                    Task {
+                                        let success = await appState.subscriptionManager.purchase()
+                                        if !success {
+                                            showingPurchaseError = true
+                                        }
+                                    }
                                 }
                                 .padding(.horizontal, 16)
                                 .padding(.vertical, 8)
@@ -173,6 +179,11 @@ struct HomeView: View {
         }
         .sheet(isPresented: $showingVideoPicker) {
             VideoPickerView()
+        }
+        .alert("Purchase Failed", isPresented: $showingPurchaseError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(appState.subscriptionManager.lastError ?? "Unknown error")
         }
     }
 }

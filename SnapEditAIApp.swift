@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 @main
 struct SnapEditAIApp: App {
@@ -15,9 +16,12 @@ struct SnapEditAIApp: App {
 
 class AppState: ObservableObject {
     @Published var isOnboardingComplete = false
-    @Published var isPremiumUser = false
+    @Published private(set) var isPremiumUser = false
     @Published var currentProject: VideoProject?
     @Published var exportCount = 0
+
+    let subscriptionManager = SubscriptionManager.shared
+    private var cancellables = Set<AnyCancellable>()
 
     let maxFreeExports = 3
 
@@ -33,6 +37,11 @@ class AppState: ObservableObject {
         whisperKey = config.stringValue(for: "WHISPER_API_KEY")
         firebaseConfig = config.stringValue(for: "FIREBASE_CONFIG")
         revenueCatKey = config.stringValue(for: "REVENUECAT_KEY")
+
+        subscriptionManager.$isPremiumUser
+            .receive(on: DispatchQueue.main)
+            .assign(to: \AppState.isPremiumUser, on: self)
+            .store(in: &cancellables)
     }
 
     var canExport: Bool {

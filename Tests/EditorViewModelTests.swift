@@ -13,7 +13,7 @@ final class EditorViewModelTests: XCTestCase {
 
     func testExportUpdatesStateWhenAllowed() {
         let appState = AppState()
-        appState.isPremiumUser = true
+        appState.subscriptionManager.isPremiumUser = true
         let vm = EditorViewModel()
         vm.export(appState: appState)
         XCTAssertTrue(vm.showingExportOptions)

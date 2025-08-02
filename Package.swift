@@ -32,6 +32,8 @@ let package = Package(
                 "SupportingViews.swift",
                 "EditorViewModel.swift",
                 "TemplatesViewModel.swift",
+
+                "Services/SubscriptionManager.swift"
                 "AICaptionService.swift"
             ]
         ),

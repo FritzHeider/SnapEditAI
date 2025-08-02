@@ -38,6 +38,7 @@ struct VideoProject: Identifiable {
     var videoURL: URL?
     var captions: [Caption] = []
     var effects: [VideoEffect] = []
+    var audioEnhancements: [String] = []
     var createdAt = Date()
 }
 

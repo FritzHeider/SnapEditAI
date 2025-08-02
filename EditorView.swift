@@ -14,6 +14,14 @@ struct EditorView: View {
         NavigationView {
             VStack(spacing: 0) {
                 if let project = currentProject {
+                    let projectBinding = Binding<VideoProject>(
+                        get: { self.currentProject ?? project },
+                        set: { newValue in
+                            self.currentProject = newValue
+                            self.appState.currentProject = newValue
+                        }
+                    )
+
                     // Video Preview
                     VideoPreviewSection(
                         project: project,
@@ -21,20 +29,20 @@ struct EditorView: View {
                         currentTime: $currentTime,
                         duration: $duration
                     )
-                    
+
                     // Timeline
                     TimelineSection(
                         currentTime: $currentTime,
                         duration: duration,
                         project: project
                     )
-                    
+
                     // Tools Section
                     ToolsSection(
                         selectedTool: $selectedTool,
-                        project: project
+                        project: projectBinding
                     )
-                    
+
                     // Bottom Actions
                     BottomActionsSection(project: project)
                 } else {
@@ -198,7 +206,7 @@ struct TimelineSection: View {
 
 struct ToolsSection: View {
     @Binding var selectedTool: EditorTool
-    let project: VideoProject
+    @Binding var project: VideoProject
     
     var body: some View {
         VStack(spacing: 16) {
@@ -223,13 +231,13 @@ struct ToolsSection: View {
                 case .trim:
                     TrimToolView()
                 case .captions:
-                    CaptionsToolView(project: project)
+                    CaptionsToolView(project: $project)
                 case .effects:
-                    EffectsToolView()
+                    EffectsToolView(project: $project)
                 case .filters:
-                    FiltersToolView()
+                    FiltersToolView(project: $project)
                 case .audio:
-                    AudioToolView()
+                    AudioToolView(project: $project)
                 }
             }
             .frame(height: 120)
@@ -293,24 +301,39 @@ struct TrimToolView: View {
 }
 
 struct CaptionsToolView: View {
-    let project: VideoProject
+    @Binding var project: VideoProject
     @State private var selectedStyle: CaptionStyle = .viral
-    
+    @State private var isLoading = false
+    @State private var errorMessage: String?
+
     var body: some View {
         VStack(spacing: 12) {
             HStack {
                 Text("AI Captions")
                     .font(.headline)
                     .foregroundColor(.white)
-                
+
                 Spacer()
-                
+
+                if isLoading {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle())
+                        .tint(.white)
+                }
+
                 Button("Generate") {
-                    // Generate AI captions
+                    generateCaptions()
                 }
                 .buttonStyle(ToolActionButtonStyle())
+                .disabled(isLoading)
             }
-            
+
+            if let errorMessage = errorMessage {
+                Text(errorMessage)
+                    .font(.caption)
+                    .foregroundColor(.red)
+            }
+
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     ForEach(CaptionStyle.allCases, id: \.self) { style in
@@ -330,23 +353,77 @@ struct CaptionsToolView: View {
             }
         }
     }
+
+    private func generateCaptions() {
+        guard let url = project.videoURL else {
+            errorMessage = "Missing video"
+            return
+        }
+
+        Task {
+            isLoading = true
+            errorMessage = nil
+            do {
+                let captions = try await AIService.shared.generateCaptions(for: url, style: selectedStyle)
+                project.captions = captions
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+            isLoading = false
+        }
+    }
 }
 
 struct EffectsToolView: View {
+    @Binding var project: VideoProject
+    @State private var isLoading = false
+    @State private var errorMessage: String?
+
     var body: some View {
         VStack {
             Text("Effects & Transitions")
                 .font(.headline)
                 .foregroundColor(.white)
-            
+
+            if isLoading {
+                ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle())
+                    .tint(.white)
+            }
+
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
-                    EffectButton(name: "Zoom In", icon: "plus.magnifyingglass")
-                    EffectButton(name: "Fade", icon: "circle.dotted")
-                    EffectButton(name: "Slide", icon: "arrow.right")
-                    EffectButton(name: "Spin", icon: "arrow.clockwise")
+                    EffectButton(name: "Zoom In", icon: "plus.magnifyingglass") { apply("Zoom In") }
+                    EffectButton(name: "Fade", icon: "circle.dotted") { apply("Fade") }
+                    EffectButton(name: "Slide", icon: "arrow.right") { apply("Slide") }
+                    EffectButton(name: "Spin", icon: "arrow.clockwise") { apply("Spin") }
                 }
             }
+
+            if let errorMessage = errorMessage {
+                Text(errorMessage)
+                    .font(.caption)
+                    .foregroundColor(.red)
+            }
+        }
+    }
+
+    private func apply(_ name: String) {
+        guard project.videoURL != nil else {
+            errorMessage = "Missing video"
+            return
+        }
+
+        Task {
+            isLoading = true
+            errorMessage = nil
+            do {
+                let effect = try await AIService.shared.applyEffect(name, to: project)
+                project.effects.append(effect)
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+            isLoading = false
         }
     }
 }
@@ -354,15 +431,14 @@ struct EffectsToolView: View {
 struct EffectButton: View {
     let name: String
     let icon: String
-    
+    let action: () -> Void
+
     var body: some View {
-        Button(action: {
-            // Apply effect
-        }) {
+        Button(action: action) {
             VStack(spacing: 4) {
                 Image(systemName: icon)
                     .font(.title3)
-                
+
                 Text(name)
                     .font(.caption2)
             }
@@ -375,17 +451,27 @@ struct EffectButton: View {
 }
 
 struct FiltersToolView: View {
+    @Binding var project: VideoProject
+    @State private var isLoading = false
+    @State private var errorMessage: String?
+
     var body: some View {
         VStack {
             Text("Viral Filters")
                 .font(.headline)
                 .foregroundColor(.white)
-            
+
+            if isLoading {
+                ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle())
+                    .tint(.white)
+            }
+
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     ForEach(["Cinematic", "Vintage", "Neon", "B&W", "Warm"], id: \.self) { filter in
                         Button(filter) {
-                            // Apply filter
+                            applyFilter(filter)
                         }
                         .font(.caption)
                         .padding(.horizontal, 12)
@@ -396,33 +482,87 @@ struct FiltersToolView: View {
                     }
                 }
             }
+
+            if let errorMessage = errorMessage {
+                Text(errorMessage)
+                    .font(.caption)
+                    .foregroundColor(.red)
+            }
+        }
+    }
+
+    private func applyFilter(_ name: String) {
+        guard project.videoURL != nil else {
+            errorMessage = "Missing video"
+            return
+        }
+
+        Task {
+            isLoading = true
+            errorMessage = nil
+            do {
+                let effect = try await AIService.shared.applyFilter(name, to: project)
+                project.effects.append(effect)
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+            isLoading = false
         }
     }
 }
 
 struct AudioToolView: View {
+    @Binding var project: VideoProject
+    @State private var isLoading = false
+    @State private var errorMessage: String?
+
     var body: some View {
         VStack {
             Text("Audio")
                 .font(.headline)
                 .foregroundColor(.white)
-            
-            HStack(spacing: 12) {
-                Button("Add Music") {
-                    // Add background music
-                }
-                .buttonStyle(ToolActionButtonStyle())
-                
-                Button("Voice Enhance") {
-                    // Enhance voice quality
-                }
-                .buttonStyle(ToolActionButtonStyle())
-                
-                Button("Remove Noise") {
-                    // Remove background noise
-                }
-                .buttonStyle(ToolActionButtonStyle())
+
+            if isLoading {
+                ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle())
+                    .tint(.white)
             }
+
+            HStack(spacing: 12) {
+                Button("Add Music") { perform("Add Music") }
+                    .buttonStyle(ToolActionButtonStyle())
+
+                Button("Voice Enhance") { perform("Voice Enhance") }
+                    .buttonStyle(ToolActionButtonStyle())
+
+                Button("Remove Noise") { perform("Remove Noise") }
+                    .buttonStyle(ToolActionButtonStyle())
+            }
+
+            if let errorMessage = errorMessage {
+                Text(errorMessage)
+                    .font(.caption)
+                    .foregroundColor(.red)
+            }
+        }
+    }
+
+    private func perform(_ type: String) {
+        guard project.videoURL != nil else {
+            errorMessage = "Missing video"
+            return
+        }
+
+        Task {
+            isLoading = true
+            errorMessage = nil
+            do {
+                _ = try await AIService.shared.enhanceAudio(type, for: project)
+                project.audioEnhancements.append(type)
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+            isLoading = false
         }
     }
 }

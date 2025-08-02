@@ -102,6 +102,10 @@ import CoreML
 3. Add required API keys for AI services
 4. Build and run on iOS 16+ device or simulator
 
+### Running Tests
+
+Run `swift test` to build the package and execute all unit and UI tests.
+
 ## API Integration
 
 ### Required Services

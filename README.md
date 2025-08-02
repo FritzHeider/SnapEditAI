@@ -80,6 +80,9 @@ import SwiftUI
 import AVFoundation
 import PhotosUI
 import CoreML
+import FirebaseCore
+import FirebaseAnalytics
+import FirebaseCrashlytics
 ```
 
 ### Key Features to Implement
@@ -118,6 +121,12 @@ Create a `Config.plist` file (ignored by git) using `Config.plist.example` as a 
 - `WHISPER_API_KEY`
 - `FIREBASE_CONFIG`
 - `REVENUECAT_KEY`
+
+For Firebase Analytics and Crashlytics:
+
+1. Create a Firebase project and enable Analytics and Crashlytics.
+2. Download the `GoogleService-Info.plist` from the Firebase console and add it to the Xcode project.
+3. Ensure Crashlytics run scripts are configured when archiving releases.
 
 
 ## Target Market

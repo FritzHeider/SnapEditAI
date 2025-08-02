@@ -70,7 +70,7 @@ struct OnboardingView: View {
                         .buttonStyle(PrimaryButtonStyle())
                         
                         Button("Start Free Trial") {
-                            // Start premium trial
+                            appState.isPremiumUser = true
                             completeOnboarding()
                         }
                         .buttonStyle(SecondaryButtonStyle())

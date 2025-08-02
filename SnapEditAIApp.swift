@@ -1,8 +1,17 @@
 import SwiftUI
+#if canImport(FirebaseCore)
+import FirebaseCore
+import FirebaseAnalytics
+import FirebaseCrashlytics
+#endif
 
 @main
 struct SnapEditAIApp: App {
     @StateObject private var appState = AppState()
+
+    init() {
+        AnalyticsManager.shared.setup()
+    }
 
     var body: some Scene {
         WindowGroup {
@@ -14,10 +23,27 @@ struct SnapEditAIApp: App {
 }
 
 class AppState: ObservableObject {
-    @Published var isOnboardingComplete = false
-    @Published var isPremiumUser = false
+    @Published var isOnboardingComplete = false {
+        didSet {
+            if isOnboardingComplete && oldValue == false {
+                AnalyticsManager.shared.logOnboardingCompleted()
+            }
+        }
+    }
+    @Published var isPremiumUser = false {
+        didSet {
+            AnalyticsManager.shared.setSubscriptionStatus(isPremium: isPremiumUser)
+            if isPremiumUser && oldValue == false {
+                AnalyticsManager.shared.logUpgrade()
+            }
+        }
+    }
     @Published var currentProject: VideoProject?
-    @Published var exportCount = 0
+    @Published var exportCount = 0 {
+        didSet {
+            AnalyticsManager.shared.setExportCount(exportCount)
+        }
+    }
 
     let maxFreeExports = 3
 
@@ -33,6 +59,9 @@ class AppState: ObservableObject {
         whisperKey = config.stringValue(for: "WHISPER_API_KEY")
         firebaseConfig = config.stringValue(for: "FIREBASE_CONFIG")
         revenueCatKey = config.stringValue(for: "REVENUECAT_KEY")
+
+        AnalyticsManager.shared.setSubscriptionStatus(isPremium: isPremiumUser)
+        AnalyticsManager.shared.setExportCount(exportCount)
     }
 
     var canExport: Bool {

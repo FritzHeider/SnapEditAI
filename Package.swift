@@ -29,6 +29,7 @@ let package = Package(
                 "EditorView.swift",
                 "OnboardingView.swift",
                 "SnapEditAIApp.swift",
+                "AnalyticsManager.swift",
                 "SupportingViews.swift",
                 "EditorViewModel.swift",
                 "TemplatesViewModel.swift"

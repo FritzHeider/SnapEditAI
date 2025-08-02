@@ -73,6 +73,7 @@ struct HomeView: View {
                             
                             if !appState.isPremiumUser {
                                 Button("Go Pro") {
+                                    AnalyticsManager.shared.logPaywallView()
                                     // Show premium upgrade
                                 }
                                 .padding(.horizontal, 16)

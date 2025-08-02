@@ -58,6 +58,11 @@ struct EditorView: View {
                 ExportOptionsView(project: project)
             }
         }
+        .alert("Purchase Failed", isPresented: $viewModel.showingPurchaseError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(appState.subscriptionManager.lastError ?? "Unknown error")
+        }
     }
 }
 
@@ -436,7 +441,6 @@ struct BottomActionsSection: View {
                 viewModel.export(appState: appState)
             }
             .buttonStyle(PrimaryActionButtonStyle())
-            .disabled(!appState.canExport)
         }
         .padding(.horizontal)
         .padding(.vertical, 16)

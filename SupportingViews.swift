@@ -234,6 +234,7 @@ struct TemplateCard: View {
 struct ProfileView: View {
     @EnvironmentObject var appState: AppState
     @State private var showingSettings = false
+    @State private var showingPurchaseError = false
     
     var body: some View {
         NavigationView {
@@ -268,16 +269,32 @@ struct ProfileView: View {
                             Text("Upgrade to Pro")
                                 .font(.headline)
                                 .foregroundColor(.white)
-                            
+
                             Text("Unlock unlimited exports, premium templates, and AI features")
                                 .font(.subheadline)
                                 .foregroundColor(.gray)
                                 .multilineTextAlignment(.center)
-                            
+
                             Button("Upgrade Now") {
-                                // Show upgrade options
+                                Task {
+                                    let success = await appState.subscriptionManager.purchase()
+                                    if !success {
+                                        showingPurchaseError = true
+                                    }
+                                }
                             }
                             .buttonStyle(PrimaryButtonStyle())
+
+                            Button("Restore Purchases") {
+                                Task {
+                                    let success = await appState.subscriptionManager.restorePurchases()
+                                    if !success {
+                                        showingPurchaseError = true
+                                    }
+                                }
+                            }
+                            .font(.footnote)
+                            .foregroundColor(.purple)
                         }
                         .padding()
                         .background(Color.gray.opacity(0.1))
@@ -329,6 +346,11 @@ struct ProfileView: View {
         }
         .sheet(isPresented: $showingSettings) {
             SettingsView()
+        }
+        .alert("Transaction Failed", isPresented: $showingPurchaseError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(appState.subscriptionManager.lastError ?? "Unknown error")
         }
     }
 }

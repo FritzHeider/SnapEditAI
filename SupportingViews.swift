@@ -302,7 +302,7 @@ struct ProfileView: View {
                         ProfileMenuItem(
                             icon: "video.fill",
                             title: "My Projects",
-                            subtitle: "View all your videos"
+                            subtitle: "\(appState.projects.count) videos"
                         )
                         
                         ProfileMenuItem(

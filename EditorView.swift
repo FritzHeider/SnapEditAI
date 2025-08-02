@@ -4,7 +4,6 @@ import AVFoundation
 struct EditorView: View {
     @EnvironmentObject var appState: AppState
     @State private var showingVideoPicker = false
-    @State private var currentProject: VideoProject?
     @State private var isPlaying = false
     @State private var currentTime: Double = 0
     @State private var duration: Double = 100
@@ -13,7 +12,7 @@ struct EditorView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                if let project = currentProject {
+                if let project = appState.currentProject {
                     // Video Preview
                     VideoPreviewSection(
                         project: project,
@@ -65,8 +64,8 @@ struct EditorView: View {
             title: "New Video \(Date().formatted(.dateTime.hour().minute()))",
             videoURL: videoURL
         )
-        currentProject = project
         appState.currentProject = project
+        appState.projects.append(project)
     }
 }
 

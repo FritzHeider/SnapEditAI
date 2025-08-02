@@ -152,8 +152,8 @@ struct HomeView: View {
                         
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 12) {
-                                ForEach(0..<5) { index in
-                                    ProjectCard(index: index)
+                                ForEach(appState.projects) { project in
+                                    ProjectCard(project: project)
                                 }
                             }
                             .padding(.horizontal)
@@ -205,8 +205,8 @@ struct QuickActionCard: View {
 }
 
 struct ProjectCard: View {
-    let index: Int
-    
+    let project: VideoProject
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             RoundedRectangle(cornerRadius: 8)
@@ -217,13 +217,13 @@ struct ProjectCard: View {
                         .font(.title)
                         .foregroundColor(.white)
                 )
-            
-            Text("Video \(index + 1)")
+
+            Text(project.title)
                 .font(.caption)
                 .fontWeight(.medium)
                 .foregroundColor(.white)
-            
-            Text("2 days ago")
+
+            Text(project.createdAt, style: .date)
                 .font(.caption2)
                 .foregroundColor(.gray)
         }

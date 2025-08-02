@@ -109,17 +109,8 @@ struct ImportOptionCard: View {
 }
 
 struct TemplatesView: View {
-    @State private var selectedCategory: TemplateCategory = .trending
-    
-    let templates = [
-        Template(name: "Viral Hook", category: .trending, thumbnail: "play.rectangle.fill"),
-        Template(name: "Storytime", category: .trending, thumbnail: "text.bubble.fill"),
-        Template(name: "Tutorial", category: .educational, thumbnail: "graduationcap.fill"),
-        Template(name: "Product Review", category: .business, thumbnail: "star.fill"),
-        Template(name: "GRWM", category: .lifestyle, thumbnail: "person.fill"),
-        Template(name: "Recipe", category: .lifestyle, thumbnail: "fork.knife"),
-    ]
-    
+    @StateObject private var viewModel = TemplatesViewModel()
+
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
@@ -129,9 +120,9 @@ struct TemplatesView: View {
                         ForEach(TemplateCategory.allCases, id: \.self) { category in
                             CategoryButton(
                                 category: category,
-                                isSelected: selectedCategory == category
+                                isSelected: viewModel.selectedCategory == category
                             ) {
-                                selectedCategory = category
+                                viewModel.selectedCategory = category
                             }
                         }
                     }
@@ -139,14 +130,14 @@ struct TemplatesView: View {
                 }
                 .padding(.vertical)
                 .background(Color.gray.opacity(0.05))
-                
+
                 // Templates Grid
                 ScrollView {
                     LazyVGrid(columns: [
                         GridItem(.flexible()),
                         GridItem(.flexible())
                     ], spacing: 16) {
-                        ForEach(filteredTemplates) { template in
+                        ForEach(viewModel.filteredTemplates) { template in
                             TemplateCard(template: template)
                         }
                     }
@@ -157,10 +148,6 @@ struct TemplatesView: View {
             .navigationTitle("Templates")
             .navigationBarTitleDisplayMode(.large)
         }
-    }
-    
-    var filteredTemplates: [Template] {
-        templates.filter { $0.category == selectedCategory }
     }
 }
 

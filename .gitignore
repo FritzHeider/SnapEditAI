@@ -1,0 +1,10 @@
+# Xcode build and user files
+DerivedData/
+build/
+
+# Sensitive configuration
+Config.plist
+.env
+
+# macOS
+.DS_Store

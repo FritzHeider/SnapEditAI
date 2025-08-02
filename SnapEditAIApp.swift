@@ -3,7 +3,7 @@ import SwiftUI
 @main
 struct SnapEditAIApp: App {
     @StateObject private var appState = AppState()
-    
+
     var body: some Scene {
         WindowGroup {
             ContentView()
@@ -18,13 +18,27 @@ class AppState: ObservableObject {
     @Published var isPremiumUser = false
     @Published var currentProject: VideoProject?
     @Published var exportCount = 0
-    
+
     let maxFreeExports = 3
-    
+
+    // API keys loaded from secure Config.plist
+    let openAIKey: String
+    let whisperKey: String
+    let firebaseConfig: String
+    let revenueCatKey: String
+
+    init() {
+        let config = ConfigManager.shared
+        openAIKey = config.stringValue(for: "OPENAI_API_KEY")
+        whisperKey = config.stringValue(for: "WHISPER_API_KEY")
+        firebaseConfig = config.stringValue(for: "FIREBASE_CONFIG")
+        revenueCatKey = config.stringValue(for: "REVENUECAT_KEY")
+    }
+
     var canExport: Bool {
         isPremiumUser || exportCount < maxFreeExports
     }
-    
+
     func incrementExportCount() {
         if !isPremiumUser {
             exportCount += 1
@@ -54,7 +68,7 @@ enum CaptionStyle: String, CaseIterable {
     case minimal = "Minimal"
     case podcast = "Podcast"
     case storytime = "Storytime"
-    
+
     var emoji: String {
         switch self {
         case .viral: return "🔥"
@@ -78,4 +92,3 @@ enum EffectType: String, CaseIterable {
     case overlay = "Overlay"
     case animation = "Animation"
 }
-

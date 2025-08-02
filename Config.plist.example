@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>OPENAI_API_KEY</key>
+    <string>YOUR_OPENAI_API_KEY</string>
+    <key>WHISPER_API_KEY</key>
+    <string>YOUR_WHISPER_API_KEY</string>
+    <key>FIREBASE_CONFIG</key>
+    <string>YOUR_FIREBASE_CONFIG</string>
+    <key>REVENUECAT_KEY</key>
+    <string>YOUR_REVENUECAT_KEY</string>
+</dict>
+</plist>

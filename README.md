@@ -99,7 +99,7 @@ import CoreML
 
 1. Open the project in Xcode 15+
 2. Configure signing and capabilities
-3. Add required API keys for AI services
+3. Copy `Config.plist.example` to `Config.plist` and add your API keys
 4. Build and run on iOS 16+ device or simulator
 
 ## API Integration
@@ -110,13 +110,15 @@ import CoreML
 - **Firebase**: For user authentication and analytics
 - **RevenueCat**: For subscription management
 
-### Environment Variables
-```swift
-// Add to Info.plist or environment
-OPENAI_API_KEY = "your_openai_key"
-FIREBASE_CONFIG = "your_firebase_config"
-REVENUECAT_KEY = "your_revenuecat_key"
-```
+### Configuration
+
+Create a `Config.plist` file (ignored by git) using `Config.plist.example` as a template and provide the following keys:
+
+- `OPENAI_API_KEY`
+- `WHISPER_API_KEY`
+- `FIREBASE_CONFIG`
+- `REVENUECAT_KEY`
+
 
 ## Target Market
 

@@ -44,6 +44,40 @@ class AppState: ObservableObject {
             exportCount += 1
         }
     }
+
+    // MARK: - Persistence
+
+    private struct PersistedState: Codable {
+        var isOnboardingComplete: Bool
+        var isPremiumUser: Bool
+        var exportCount: Int
+    }
+
+    private static var persistenceURL: URL {
+        FileManager.default.temporaryDirectory.appendingPathComponent("appstate.json")
+    }
+
+    func save() throws {
+        let state = PersistedState(
+            isOnboardingComplete: isOnboardingComplete,
+            isPremiumUser: isPremiumUser,
+            exportCount: exportCount
+        )
+        let data = try JSONEncoder().encode(state)
+        try data.write(to: Self.persistenceURL)
+    }
+
+    static func load() -> AppState {
+        if let data = try? Data(contentsOf: persistenceURL),
+           let decoded = try? JSONDecoder().decode(PersistedState.self, from: data) {
+            let state = AppState()
+            state.isOnboardingComplete = decoded.isOnboardingComplete
+            state.isPremiumUser = decoded.isPremiumUser
+            state.exportCount = decoded.exportCount
+            return state
+        }
+        return AppState()
+    }
 }
 
 struct VideoProject: Identifiable {

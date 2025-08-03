@@ -9,6 +9,9 @@ let package = Package(
     products: [
         .library(name: "SnapEditAI", targets: ["SnapEditAI"])
     ],
+    dependencies: [
+        .package(url: "https://github.com/nalexn/ViewInspector.git", from: "0.9.11")
+    ],
     targets: [
         .target(
             name: "SnapEditAI",
@@ -22,7 +25,8 @@ let package = Package(
                 "SnapEdit AI: AI-Powered Video Editor for Short-Form Content.pptx",
                 "Tests",
                 ".git",
-                ".DS_Store"
+                ".DS_Store",
+                "Config.plist.example"
             ],
             sources: [
                 "ContentView.swift",
@@ -31,12 +35,16 @@ let package = Package(
                 "SnapEditAIApp.swift",
                 "SupportingViews.swift",
                 "EditorViewModel.swift",
-                "TemplatesViewModel.swift"
+                "TemplatesViewModel.swift",
+                "ConfigManager.swift"
             ]
         ),
         .testTarget(
             name: "SnapEditAITests",
-            dependencies: ["SnapEditAI"],
+            dependencies: [
+                "SnapEditAI",
+                .product(name: "ViewInspector", package: "ViewInspector")
+            ],
             path: "Tests"
         )
     ]

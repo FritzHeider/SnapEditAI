@@ -102,6 +102,16 @@ import CoreML
 3. Copy `Config.plist.example` to `Config.plist` and add your API keys
 4. Build and run on iOS 16+ device or simulator
 
+## Running Tests
+
+Run all unit and UI tests using Xcode:
+
+```bash
+xcodebuild test -scheme SnapEditAI-Package -destination 'platform=iOS Simulator,name=iPhone 14,OS=16.4'
+```
+
+Or open the project in Xcode and press **Cmd+U** to execute the test suite.
+
 ## API Integration
 
 ### Required Services

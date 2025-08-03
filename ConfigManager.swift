@@ -14,6 +14,12 @@ final class ConfigManager {
         }
     }
 
+    /// Testing initializer that allows injecting a custom configuration dictionary.
+    /// This enables unit tests to supply mock values without relying on a real plist file.
+    init(testingConfig: [String: Any]) {
+        self.config = testingConfig
+    }
+
     func stringValue(for key: String) -> String {
         config[key] as? String ?? ""
     }

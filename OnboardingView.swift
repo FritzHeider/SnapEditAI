@@ -1,3 +1,4 @@
+#if canImport(SwiftUI)
 import SwiftUI
 
 struct OnboardingView: View {
@@ -70,7 +71,7 @@ struct OnboardingView: View {
                         .buttonStyle(PrimaryButtonStyle())
                         
                         Button("Start Free Trial") {
-                            // Start premium trial
+                            appState.isPremiumUser = true
                             completeOnboarding()
                         }
                         .buttonStyle(SecondaryButtonStyle())
@@ -183,4 +184,6 @@ struct SecondaryButtonStyle: ButtonStyle {
     OnboardingView()
         .environmentObject(AppState())
 }
+
+#endif
 

@@ -80,6 +80,9 @@ import SwiftUI
 import AVFoundation
 import PhotosUI
 import CoreML
+import FirebaseCore
+import FirebaseAnalytics
+import FirebaseCrashlytics
 ```
 
 ### Key Features to Implement
@@ -99,7 +102,7 @@ import CoreML
 
 1. Open the project in Xcode 15+
 2. Configure signing and capabilities
-3. Copy `Config.plist.example` to `Config.plist` and add your API keys
+3. Copy `Config.plist.example` to `Config.plist` and add your API keys, **or** create a `.env` file with the same keys.
 4. Build and run on iOS 16+ device or simulator
 
 ## Running Tests
@@ -122,12 +125,23 @@ Or open the project in Xcode and press **Cmd+U** to execute the test suite.
 
 ### Configuration
 
-Create a `Config.plist` file (ignored by git) using `Config.plist.example` as a template and provide the following keys:
+API credentials are never committed to the repository. The app reads values from `Config.plist`, an optional `.env` file, or environment variables in that order.
+
+1. Copy `Config.plist.example` to `Config.plist` and supply your own values, **or**
+2. Create a `.env` file (also ignored by git) with the following keys.
+
+Required keys:
 
 - `OPENAI_API_KEY`
 - `WHISPER_API_KEY`
 - `FIREBASE_CONFIG`
 - `REVENUECAT_KEY`
+
+For Firebase Analytics and Crashlytics:
+
+1. Create a Firebase project and enable Analytics and Crashlytics.
+2. Download the `GoogleService-Info.plist` from the Firebase console and add it to the Xcode project.
+3. Ensure Crashlytics run scripts are configured when archiving releases.
 
 
 ## Target Market

@@ -1,6 +1,7 @@
 # Xcode build and user files
 DerivedData/
 build/
+.build/
 
 # Sensitive configuration
 Config.plist

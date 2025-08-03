@@ -2,7 +2,9 @@
 import SwiftUI
 import PhotosUI
 import AVFoundation
+import UIKit
 import Photos
+
 
 struct VideoPickerView: View {
     @Environment(\.dismiss) private var dismiss
@@ -581,6 +583,8 @@ struct ExportOptionsView: View {
     @State private var selectedQuality: ExportQuality = .high
     @State private var selectedPlatform: Platform = .tiktok
     @State private var isExporting = false
+    @State private var exportProgress: Double = 0
+    @State private var exportError: String?
     
     var body: some View {
         NavigationView {
@@ -643,11 +647,11 @@ struct ExportOptionsView: View {
                 }) {
                     HStack {
                         if isExporting {
-                            ProgressView()
+                            ProgressView(value: exportProgress)
                                 .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                 .scaleEffect(0.8)
                         }
-                        
+
                         Text(isExporting ? "Exporting..." : "Export Video")
                             .font(.headline)
                     }
@@ -669,17 +673,119 @@ struct ExportOptionsView: View {
                 }
             }
         }
+        .alert(exportError ?? "", isPresented: Binding(
+            get: { exportError != nil },
+            set: { if !$0 { exportError = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        }
     }
-    
+
     private func exportVideo() {
+        guard let inputURL = project.videoURL else { return }
+
         isExporting = true
-        
-        // Simulate export process
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+        exportProgress = 0
+        exportError = nil
+
+        let asset = AVAsset(url: inputURL)
+        let composition = AVMutableComposition()
+
+        guard
+            let videoTrack = asset.tracks(withMediaType: .video).first,
+            let compositionVideoTrack = composition.addMutableTrack(
+                withMediaType: .video,
+                preferredTrackID: kCMPersistentTrackID_Invalid
+            )
+        else {
             isExporting = false
-            appState.incrementExportCount()
-            AnalyticsManager.shared.logExport()
-            dismiss()
+            exportError = "Unable to load video track"
+            return
+        }
+
+        do {
+            try compositionVideoTrack.insertTimeRange(
+                CMTimeRange(start: .zero, duration: asset.duration),
+                of: videoTrack,
+                at: .zero
+            )
+        } catch {
+            isExporting = false
+            exportError = error.localizedDescription
+            return
+        }
+
+        let videoSize = videoTrack.naturalSize
+        let videoComposition = AVMutableVideoComposition()
+        videoComposition.renderSize = videoSize
+        videoComposition.frameDuration = CMTime(value: 1, timescale: 30)
+
+        let instruction = AVMutableVideoCompositionInstruction()
+        instruction.timeRange = CMTimeRange(start: .zero, duration: asset.duration)
+        let layerInstruction = AVMutableVideoCompositionLayerInstruction(assetTrack: compositionVideoTrack)
+        instruction.layerInstructions = [layerInstruction]
+        videoComposition.instructions = [instruction]
+
+        if !appState.isPremiumUser {
+            let parentLayer = CALayer()
+            let videoLayer = CALayer()
+            parentLayer.frame = CGRect(origin: .zero, size: videoSize)
+            videoLayer.frame = parentLayer.frame
+            parentLayer.addSublayer(videoLayer)
+
+            let watermarkLayer = CATextLayer()
+            watermarkLayer.string = "SnapEditAI"
+            watermarkLayer.foregroundColor = UIColor.white.cgColor
+            watermarkLayer.fontSize = 24
+            watermarkLayer.alignmentMode = .right
+            watermarkLayer.opacity = 0.7
+            watermarkLayer.frame = CGRect(x: videoSize.width - 160, y: 20, width: 150, height: 40)
+            parentLayer.addSublayer(watermarkLayer)
+
+            videoComposition.animationTool = AVVideoCompositionCoreAnimationTool(
+                postProcessingAsVideoLayer: videoLayer,
+                in: parentLayer
+            )
+        }
+
+        guard let exportSession = AVAssetExportSession(
+            asset: composition,
+            presetName: selectedPlatform.exportPreset
+        ) else {
+            isExporting = false
+            exportError = "Unable to create export session"
+            return
+        }
+
+        let outputURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("exported-\(UUID().uuidString).mp4")
+        exportSession.outputURL = outputURL
+        exportSession.outputFileType = .mp4
+        exportSession.videoComposition = videoComposition
+        exportSession.shouldOptimizeForNetworkUse = true
+
+        let timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { timer in
+            exportProgress = Double(exportSession.progress)
+            if exportSession.status != .exporting {
+                timer.invalidate()
+            }
+        }
+
+        exportSession.exportAsynchronously {
+            DispatchQueue.main.async {
+                timer.invalidate()
+                isExporting = false
+                switch exportSession.status {
+                case .completed:
+                    appState.incrementExportCount()
+                    dismiss()
+                case .failed, .cancelled:
+                    exportError = exportSession.error?.localizedDescription ?? "Export failed"
+                default:
+                    break
+                }
+            }
+
         }
     }
 }
@@ -694,6 +800,17 @@ enum Platform: String, CaseIterable {
         case .tiktok: return "music.note"
         case .instagram: return "camera"
         case .youtube: return "play.rectangle"
+        }
+    }
+
+    var exportPreset: String {
+        switch self {
+        case .tiktok:
+            return AVAssetExportPreset960x540
+        case .instagram:
+            return AVAssetExportPreset1280x720
+        case .youtube:
+            return AVAssetExportPreset1920x1080
         }
     }
 }

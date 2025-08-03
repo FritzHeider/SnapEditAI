@@ -1,3 +1,4 @@
+#if canImport(SwiftUI)
 import SwiftUI
 import PhotosUI
 
@@ -150,30 +151,6 @@ struct TemplatesView: View {
         }
     }
 }
-
-enum TemplateCategory: String, CaseIterable {
-    case trending = "Trending"
-    case educational = "Educational"
-    case business = "Business"
-    case lifestyle = "Lifestyle"
-    
-    var icon: String {
-        switch self {
-        case .trending: return "flame.fill"
-        case .educational: return "graduationcap.fill"
-        case .business: return "briefcase.fill"
-        case .lifestyle: return "heart.fill"
-        }
-    }
-}
-
-struct Template: Identifiable {
-    let id = UUID()
-    let name: String
-    let category: TemplateCategory
-    let thumbnail: String
-}
-
 struct CategoryButton: View {
     let category: TemplateCategory
     let isSelected: Bool
@@ -623,4 +600,6 @@ struct QualityOption: View {
 #Preview {
     VideoPickerView()
 }
+
+#endif
 

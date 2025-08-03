@@ -2,6 +2,7 @@ import XCTest
 @testable import SnapEditAI
 
 final class EditorViewModelTests: XCTestCase {
+    @MainActor
     func testCreateNewProjectSetsProject() {
         let appState = AppState()
         let vm = EditorViewModel()
@@ -11,6 +12,7 @@ final class EditorViewModelTests: XCTestCase {
         XCTAssertEqual(appState.currentProject?.videoURL, url)
     }
 
+    @MainActor
     func testExportUpdatesStateWhenAllowed() {
         let appState = AppState()
         appState.isPremiumUser = true

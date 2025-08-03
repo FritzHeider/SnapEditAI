@@ -32,7 +32,11 @@ let package = Package(
                 "SupportingViews.swift",
                 "EditorViewModel.swift",
                 "TemplatesViewModel.swift",
-                "Persistence/PersistenceManager.swift"
+                "Persistence/PersistenceManager.swift",
+                "AppState.swift",
+                "EditorModels.swift",
+                "CombineShim.swift",
+                "ConfigManager.swift"
             ]
         ),
         .testTarget(

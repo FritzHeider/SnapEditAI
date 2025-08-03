@@ -1,3 +1,4 @@
+#if canImport(SwiftUI)
 import SwiftUI
 
 struct OnboardingView: View {
@@ -183,4 +184,6 @@ struct SecondaryButtonStyle: ButtonStyle {
     OnboardingView()
         .environmentObject(AppState())
 }
+
+#endif
 

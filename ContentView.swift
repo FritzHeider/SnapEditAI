@@ -1,3 +1,4 @@
+#if canImport(SwiftUI)
 import SwiftUI
 
 struct ContentView: View {
@@ -281,4 +282,6 @@ struct UsageStatsCard: View {
     ContentView()
         .environmentObject(AppState())
 }
+
+#endif
 

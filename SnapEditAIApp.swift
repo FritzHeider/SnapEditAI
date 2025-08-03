@@ -15,9 +15,16 @@ struct SnapEditAIApp: App {
 
 class AppState: ObservableObject {
     @Published var isOnboardingComplete = false
-    @Published var isPremiumUser = false
+    @Published var isPremiumUser: Bool {
+        didSet { persistence.saveIsPremiumUser(isPremiumUser) }
+    }
     @Published var currentProject: VideoProject?
-    @Published var exportCount = 0
+    @Published var exportCount: Int {
+        didSet { persistence.saveExportCount(exportCount) }
+    }
+    @Published var projects: [VideoProject] {
+        didSet { persistence.saveProjects(projects) }
+    }
 
     let maxFreeExports = 3
 
@@ -27,7 +34,14 @@ class AppState: ObservableObject {
     let firebaseConfig: String
     let revenueCatKey: String
 
-    init() {
+    private let persistence: PersistenceManager
+
+    init(persistence: PersistenceManager = .shared) {
+        self.persistence = persistence
+        self.isPremiumUser = persistence.loadIsPremiumUser()
+        self.exportCount = persistence.loadExportCount()
+        self.projects = persistence.loadProjects()
+
         let config = ConfigManager.shared
         openAIKey = config.stringValue(for: "OPENAI_API_KEY")
         whisperKey = config.stringValue(for: "WHISPER_API_KEY")
@@ -46,8 +60,8 @@ class AppState: ObservableObject {
     }
 }
 
-struct VideoProject: Identifiable {
-    let id = UUID()
+struct VideoProject: Identifiable, Codable {
+    var id: UUID = UUID()
     var title: String
     var videoURL: URL?
     var captions: [Caption] = []
@@ -55,15 +69,15 @@ struct VideoProject: Identifiable {
     var createdAt = Date()
 }
 
-struct Caption: Identifiable {
-    let id = UUID()
+struct Caption: Identifiable, Codable {
+    var id: UUID = UUID()
     var text: String
     var startTime: Double
     var endTime: Double
     var style: CaptionStyle = .viral
 }
 
-enum CaptionStyle: String, CaseIterable {
+enum CaptionStyle: String, CaseIterable, Codable {
     case viral = "Viral"
     case minimal = "Minimal"
     case podcast = "Podcast"
@@ -79,14 +93,14 @@ enum CaptionStyle: String, CaseIterable {
     }
 }
 
-struct VideoEffect: Identifiable {
-    let id = UUID()
+struct VideoEffect: Identifiable, Codable {
+    var id: UUID = UUID()
     var name: String
     var type: EffectType
     var intensity: Double = 1.0
 }
 
-enum EffectType: String, CaseIterable {
+enum EffectType: String, CaseIterable, Codable {
     case transition = "Transition"
     case filter = "Filter"
     case overlay = "Overlay"

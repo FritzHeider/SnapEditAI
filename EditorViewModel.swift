@@ -20,6 +20,7 @@ class EditorViewModel: ObservableObject {
         )
         currentProject = project
         appState.currentProject = project
+        appState.projects.append(project)
     }
 
     func export(appState: AppState) {

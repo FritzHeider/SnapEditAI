@@ -58,6 +58,14 @@ struct EditorView: View {
                 ExportOptionsView(project: project)
             }
         }
+        .onAppear {
+            if viewModel.currentProject == nil {
+                viewModel.currentProject = appState.currentProject
+            }
+        }
+        .onChange(of: viewModel.currentProject) { newValue in
+            appState.currentProject = newValue
+        }
     }
 }
 

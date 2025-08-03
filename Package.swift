@@ -31,7 +31,8 @@ let package = Package(
                 "SnapEditAIApp.swift",
                 "SupportingViews.swift",
                 "EditorViewModel.swift",
-                "TemplatesViewModel.swift"
+                "TemplatesViewModel.swift",
+                "Persistence/PersistenceManager.swift"
             ]
         ),
         .testTarget(

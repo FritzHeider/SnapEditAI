@@ -295,7 +295,7 @@ struct ProfileView: View {
                         ProfileMenuItem(
                             icon: "square.and.arrow.up",
                             title: "Export History",
-                            subtitle: "Track your exports"
+                            subtitle: "Track your exports \(appState.exportCount)"
                         )
                         
                         ProfileMenuItem(

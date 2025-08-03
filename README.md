@@ -102,7 +102,7 @@ import FirebaseCrashlytics
 
 1. Open the project in Xcode 15+
 2. Configure signing and capabilities
-3. Copy `Config.plist.example` to `Config.plist` and add your API keys
+3. Copy `Config.plist.example` to `Config.plist` and add your API keys, **or** create a `.env` file with the same keys.
 4. Build and run on iOS 16+ device or simulator
 
 ## API Integration
@@ -115,7 +115,12 @@ import FirebaseCrashlytics
 
 ### Configuration
 
-Create a `Config.plist` file (ignored by git) using `Config.plist.example` as a template and provide the following keys:
+API credentials are never committed to the repository. The app reads values from `Config.plist`, an optional `.env` file, or environment variables in that order.
+
+1. Copy `Config.plist.example` to `Config.plist` and supply your own values, **or**
+2. Create a `.env` file (also ignored by git) with the following keys.
+
+Required keys:
 
 - `OPENAI_API_KEY`
 - `WHISPER_API_KEY`

@@ -39,8 +39,13 @@ final class ConfigManager {
         }
     }
 
-    /// Returns the configuration value for the given key or an empty string if
-    /// the key is not found.
+    /// Testing initializer that allows injecting a custom configuration dictionary.
+    /// This enables unit tests to supply mock values without relying on a real plist file.
+    init(testingConfig: [String: Any]) {
+        self.config = testingConfig
+    }
+
+
     func stringValue(for key: String) -> String {
         config[key] ?? ""
     }

@@ -1,0 +1,17 @@
+name: CI
+
+on:
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '15.0'
+      - name: Build and run tests
+        run: |
+          xcodebuild test -scheme SnapEditAI-Package -destination 'platform=iOS Simulator,name=iPhone 14,OS=16.4'

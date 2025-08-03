@@ -1,9 +1,18 @@
 import SwiftUI
+#if canImport(FirebaseCore)
+import FirebaseCore
+import FirebaseAnalytics
+import FirebaseCrashlytics
+#endif
 import Combine
 
 @main
 struct SnapEditAIApp: App {
     @StateObject private var appState = AppState()
+
+    init() {
+        AnalyticsManager.shared.setup()
+    }
 
     var body: some Scene {
         WindowGroup {
@@ -15,14 +24,32 @@ struct SnapEditAIApp: App {
 }
 
 class AppState: ObservableObject {
-    @Published var isOnboardingComplete = false
-    @Published private(set) var isPremiumUser = false
+    @Published var isOnboardingComplete = false {
+        didSet {
+            if isOnboardingComplete && oldValue == false {
+                AnalyticsManager.shared.logOnboardingCompleted()
+            }
+        }
+    }
+
+    @Published private(set) var isPremiumUser = false {
+        didSet {
+            AnalyticsManager.shared.setSubscriptionStatus(isPremium: isPremiumUser)
+            if isPremiumUser && oldValue == false {
+                AnalyticsManager.shared.logUpgrade()
+            }
+        }
+    }
+
     @Published var currentProject: VideoProject?
-    @Published var exportCount = 0
+    @Published var exportCount = 0 {
+        didSet {
+            AnalyticsManager.shared.setExportCount(exportCount)
+        }
+    }
 
     let subscriptionManager = SubscriptionManager.shared
     private var cancellables = Set<AnyCancellable>()
-
     let maxFreeExports = 3
 
     // API keys loaded from secure Config.plist
@@ -38,9 +65,12 @@ class AppState: ObservableObject {
         firebaseConfig = config.stringValue(for: "FIREBASE_CONFIG")
         revenueCatKey = config.stringValue(for: "REVENUECAT_KEY")
 
+        AnalyticsManager.shared.setSubscriptionStatus(isPremium: isPremiumUser)
+        AnalyticsManager.shared.setExportCount(exportCount)
+
         subscriptionManager.$isPremiumUser
             .receive(on: DispatchQueue.main)
-            .assign(to: \AppState.isPremiumUser, on: self)
+            .assign(to: \.isPremiumUser, on: self)
             .store(in: &cancellables)
     }
 
@@ -72,6 +102,7 @@ struct Caption: Identifiable {
     var style: CaptionStyle = .viral
 }
 
+enum CaptionStyle: String
 enum CaptionStyle: String, CaseIterable {
     case viral = "Viral"
     case minimal = "Minimal"

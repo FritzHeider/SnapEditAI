@@ -646,6 +646,7 @@ struct ExportOptionsView: View {
                                     isPremium: quality == .ultra && !appState.isPremiumUser
                                 ) {
                                     if quality == .ultra && !appState.isPremiumUser {
+                                        AnalyticsManager.shared.logPaywallView()
                                         // Show upgrade prompt
                                     } else {
                                         selectedQuality = quality
@@ -700,6 +701,7 @@ struct ExportOptionsView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
             isExporting = false
             appState.incrementExportCount()
+            AnalyticsManager.shared.logExport()
             dismiss()
         }
     }

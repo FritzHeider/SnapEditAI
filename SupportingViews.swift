@@ -109,16 +109,7 @@ struct ImportOptionCard: View {
 }
 
 struct TemplatesView: View {
-    @State private var selectedCategory: TemplateCategory = .trending
-    
-    let templates = [
-        Template(name: "Viral Hook", category: .trending, thumbnail: "play.rectangle.fill"),
-        Template(name: "Storytime", category: .trending, thumbnail: "text.bubble.fill"),
-        Template(name: "Tutorial", category: .educational, thumbnail: "graduationcap.fill"),
-        Template(name: "Product Review", category: .business, thumbnail: "star.fill"),
-        Template(name: "GRWM", category: .lifestyle, thumbnail: "person.fill"),
-        Template(name: "Recipe", category: .lifestyle, thumbnail: "fork.knife"),
-    ]
+    @StateObject private var viewModel = TemplatesViewModel()
     
     var body: some View {
         NavigationView {
@@ -129,9 +120,9 @@ struct TemplatesView: View {
                         ForEach(TemplateCategory.allCases, id: \.self) { category in
                             CategoryButton(
                                 category: category,
-                                isSelected: selectedCategory == category
+                                isSelected: viewModel.selectedCategory == category
                             ) {
-                                selectedCategory = category
+                                viewModel.selectedCategory = category
                             }
                         }
                     }
@@ -146,7 +137,7 @@ struct TemplatesView: View {
                         GridItem(.flexible()),
                         GridItem(.flexible())
                     ], spacing: 16) {
-                        ForEach(filteredTemplates) { template in
+                        ForEach(viewModel.filteredTemplates) { template in
                             TemplateCard(template: template)
                         }
                     }
@@ -159,32 +150,6 @@ struct TemplatesView: View {
         }
     }
     
-    var filteredTemplates: [Template] {
-        templates.filter { $0.category == selectedCategory }
-    }
-}
-
-enum TemplateCategory: String, CaseIterable {
-    case trending = "Trending"
-    case educational = "Educational"
-    case business = "Business"
-    case lifestyle = "Lifestyle"
-    
-    var icon: String {
-        switch self {
-        case .trending: return "flame.fill"
-        case .educational: return "graduationcap.fill"
-        case .business: return "briefcase.fill"
-        case .lifestyle: return "heart.fill"
-        }
-    }
-}
-
-struct Template: Identifiable {
-    let id = UUID()
-    let name: String
-    let category: TemplateCategory
-    let thumbnail: String
 }
 
 struct CategoryButton: View {

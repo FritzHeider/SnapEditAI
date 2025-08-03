@@ -3,42 +3,37 @@ import AVFoundation
 
 struct EditorView: View {
     @EnvironmentObject var appState: AppState
-    @State private var showingVideoPicker = false
-    @State private var currentProject: VideoProject?
-    @State private var isPlaying = false
-    @State private var currentTime: Double = 0
-    @State private var duration: Double = 100
-    @State private var selectedTool: EditorTool = .trim
+    @StateObject private var viewModel = EditorViewModel()
     
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                if let project = currentProject {
+                if let project = viewModel.currentProject {
                     // Video Preview
                     VideoPreviewSection(
                         project: project,
-                        isPlaying: $isPlaying,
-                        currentTime: $currentTime,
-                        duration: $duration
+                        isPlaying: $viewModel.isPlaying,
+                        currentTime: $viewModel.currentTime,
+                        duration: $viewModel.duration
                     )
                     
                     // Timeline
                     TimelineSection(
-                        currentTime: $currentTime,
-                        duration: duration,
+                        currentTime: $viewModel.currentTime,
+                        duration: viewModel.duration,
                         project: project
                     )
                     
                     // Tools Section
                     ToolsSection(
-                        selectedTool: $selectedTool,
+                        selectedTool: $viewModel.selectedTool,
                         project: project
                     )
                     
                     // Bottom Actions
-                    BottomActionsSection(project: project)
+                    BottomActionsSection(project: project, viewModel: viewModel)
                 } else {
-                    EmptyEditorState(showingVideoPicker: $showingVideoPicker)
+                    EmptyEditorState(showingVideoPicker: $viewModel.showingVideoPicker)
                 }
             }
             .background(Color.black)
@@ -47,43 +42,16 @@ struct EditorView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Import") {
-                        showingVideoPicker = true
+                        viewModel.showingVideoPicker = true
                     }
                     .foregroundColor(.purple)
                 }
             }
         }
-        .sheet(isPresented: $showingVideoPicker) {
+        .sheet(isPresented: $viewModel.showingVideoPicker) {
             VideoPickerView { url in
-                createNewProject(with: url)
+                viewModel.createNewProject(with: url, appState: appState)
             }
-        }
-    }
-    
-    private func createNewProject(with videoURL: URL) {
-        let project = VideoProject(
-            title: "New Video \(Date().formatted(.dateTime.hour().minute()))",
-            videoURL: videoURL
-        )
-        currentProject = project
-        appState.currentProject = project
-    }
-}
-
-enum EditorTool: String, CaseIterable {
-    case trim = "Trim"
-    case captions = "Captions"
-    case effects = "Effects"
-    case filters = "Filters"
-    case audio = "Audio"
-    
-    var icon: String {
-        switch self {
-        case .trim: return "scissors"
-        case .captions: return "text.bubble"
-        case .effects: return "wand.and.stars"
-        case .filters: return "camera.filters"
-        case .audio: return "speaker.wave.2"
         }
     }
 }
@@ -430,23 +398,19 @@ struct AudioToolView: View {
 struct BottomActionsSection: View {
     let project: VideoProject
     @EnvironmentObject var appState: AppState
-    @State private var showingExportOptions = false
-    
+    @ObservedObject var viewModel: EditorViewModel
+
     var body: some View {
         HStack(spacing: 16) {
             Button("Preview") {
                 // Preview video
             }
             .buttonStyle(SecondaryActionButtonStyle())
-            
+
             Spacer()
-            
+
             Button("Export") {
-                if appState.canExport {
-                    showingExportOptions = true
-                } else {
-                    // Show upgrade prompt
-                }
+                viewModel.exportProject(appState: appState)
             }
             .buttonStyle(PrimaryActionButtonStyle())
             .disabled(!appState.canExport)
@@ -454,7 +418,7 @@ struct BottomActionsSection: View {
         .padding(.horizontal)
         .padding(.vertical, 16)
         .background(Color.black)
-        .sheet(isPresented: $showingExportOptions) {
+        .sheet(isPresented: $viewModel.showingExportOptions) {
             ExportOptionsView(project: project)
         }
     }

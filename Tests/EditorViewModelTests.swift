@@ -15,7 +15,7 @@ final class EditorViewModelTests: XCTestCase {
     @MainActor
     func testExportUpdatesStateWhenAllowed() {
         let appState = AppState()
-        appState.isPremiumUser = true
+        appState.subscriptionManager.isPremiumUser = true
         let vm = EditorViewModel()
         vm.export(appState: appState)
         XCTAssertTrue(vm.showingExportOptions)

@@ -62,16 +62,10 @@ struct HomeView: View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 20) {
-                    // Header
                     headerSection
-
-                    // Quick Actions
                     quickActionsSection
-
-                    // Recent Projects
                     recentProjectsSection
 
-                    // Usage Stats
                     if !appState.isPremiumUser {
                         UsageStatsCard()
                             .padding(.horizontal)
@@ -153,21 +147,9 @@ struct HomeView: View {
             .foregroundColor(.white)
 
             HStack(spacing: 12) {
-                QuickActionCard(
-                    icon: "camera.fill",
-                    title: "Record",
-                    subtitle: "New video"
-                )
-                QuickActionCard(
-                    icon: "photo.on.rectangle",
-                    title: "Import",
-                    subtitle: "From gallery"
-                )
-                QuickActionCard(
-                    icon: "wand.and.stars",
-                    title: "AI Magic",
-                    subtitle: "Auto-edit"
-                )
+                QuickActionCard(icon: "camera.fill", title: "Record", subtitle: "New video")
+                QuickActionCard(icon: "photo.on.rectangle", title: "Import", subtitle: "From gallery")
+                QuickActionCard(icon: "wand.and.stars", title: "AI Magic", subtitle: "Auto-edit")
             }
         }
         .padding(.horizontal)
@@ -189,8 +171,8 @@ struct HomeView: View {
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
-                    ForEach(0..<5) { index in
-                        ProjectCard(index: index)
+                    ForEach(appState.projects) { project in
+                        ProjectCard(project: project)
                     }
                 }
                 .padding(.horizontal)
@@ -227,7 +209,7 @@ struct QuickActionCard: View {
 }
 
 struct ProjectCard: View {
-    let index: Int
+    let project: VideoProject
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -240,12 +222,12 @@ struct ProjectCard: View {
                         .foregroundColor(.white)
                 )
 
-            Text("Video \(index + 1)")
+            Text(project.title)
                 .font(.caption)
                 .fontWeight(.medium)
                 .foregroundColor(.white)
 
-            Text("2 days ago")
+            Text(project.createdAt.formatted(date: .abbreviated, time: .omitted))
                 .font(.caption2)
                 .foregroundColor(.gray)
         }

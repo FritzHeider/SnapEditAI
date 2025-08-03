@@ -1,3 +1,4 @@
+#if canImport(SwiftUI)
 import SwiftUI
 #if canImport(FirebaseCore)
 import FirebaseCore
@@ -70,7 +71,7 @@ class AppState: ObservableObject {
 
         subscriptionManager.$isPremiumUser
             .receive(on: DispatchQueue.main)
-            .assign(to: \.isPremiumUser, on: self)
+            .assign(to: \AppState.isPremiumUser, on: self)
             .store(in: &cancellables)
     }
 
@@ -102,7 +103,6 @@ struct Caption: Identifiable {
     var style: CaptionStyle = .viral
 }
 
-enum CaptionStyle: String
 enum CaptionStyle: String, CaseIterable {
     case viral = "Viral"
     case minimal = "Minimal"
@@ -111,10 +111,10 @@ enum CaptionStyle: String, CaseIterable {
 
     var emoji: String {
         switch self {
-        case .viral: return "🔥"
-        case .minimal: return "✨"
-        case .podcast: return "🎙️"
-        case .storytime: return "📖"
+        case .viral: return "\u{1F525}"
+        case .minimal: return "\u{2728}"
+        case .podcast: return "\u{1F399}\u{FE0F}"
+        case .storytime: return "\u{1F4D6}"
         }
     }
 }
@@ -132,3 +132,5 @@ enum EffectType: String, CaseIterable {
     case overlay = "Overlay"
     case animation = "Animation"
 }
+
+#endif

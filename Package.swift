@@ -32,7 +32,10 @@ let package = Package(
                 "AnalyticsManager.swift",
                 "SupportingViews.swift",
                 "EditorViewModel.swift",
-                "TemplatesViewModel.swift"
+                "TemplatesViewModel.swift",
+
+                "Services/SubscriptionManager.swift"
+                "AICaptionService.swift"
             ]
         ),
         .testTarget(

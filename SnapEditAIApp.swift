@@ -4,6 +4,7 @@ import FirebaseCore
 import FirebaseAnalytics
 import FirebaseCrashlytics
 #endif
+import Combine
 
 @main
 struct SnapEditAIApp: App {
@@ -30,7 +31,8 @@ class AppState: ObservableObject {
             }
         }
     }
-    @Published var isPremiumUser = false {
+
+    @Published private(set) var isPremiumUser = false {
         didSet {
             AnalyticsManager.shared.setSubscriptionStatus(isPremium: isPremiumUser)
             if isPremiumUser && oldValue == false {
@@ -38,6 +40,7 @@ class AppState: ObservableObject {
             }
         }
     }
+
     @Published var currentProject: VideoProject?
     @Published var exportCount = 0 {
         didSet {
@@ -45,6 +48,8 @@ class AppState: ObservableObject {
         }
     }
 
+    let subscriptionManager = SubscriptionManager.shared
+    private var cancellables = Set<AnyCancellable>()
     let maxFreeExports = 3
 
     // API keys loaded from secure Config.plist
@@ -62,6 +67,11 @@ class AppState: ObservableObject {
 
         AnalyticsManager.shared.setSubscriptionStatus(isPremium: isPremiumUser)
         AnalyticsManager.shared.setExportCount(exportCount)
+
+        subscriptionManager.$isPremiumUser
+            .receive(on: DispatchQueue.main)
+            .assign(to: \.isPremiumUser, on: self)
+            .store(in: &cancellables)
     }
 
     var canExport: Bool {
@@ -92,6 +102,7 @@ struct Caption: Identifiable {
     var style: CaptionStyle = .viral
 }
 
+enum CaptionStyle: String
 enum CaptionStyle: String, CaseIterable {
     case viral = "Viral"
     case minimal = "Minimal"

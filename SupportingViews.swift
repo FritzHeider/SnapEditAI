@@ -1,12 +1,21 @@
+#if canImport(SwiftUI)
 import SwiftUI
 import PhotosUI
 import AVFoundation
 import UIKit
+import Photos
+
 
 struct VideoPickerView: View {
     @Environment(\.dismiss) private var dismiss
     var onVideoSelected: ((URL) -> Void)?
-    
+
+    @State private var showingCamera = false
+    @State private var showingLibrary = false
+    @State private var selectedItem: PhotosPickerItem?
+    @State private var showingError = false
+    @State private var errorMessage = ""
+
     var body: some View {
         NavigationView {
             VStack(spacing: 20) {
@@ -14,7 +23,7 @@ struct VideoPickerView: View {
                     .font(.largeTitle)
                     .fontWeight(.bold)
                     .foregroundColor(.white)
-                
+
                 VStack(spacing: 16) {
                     ImportOptionCard(
                         icon: "camera.fill",
@@ -22,35 +31,20 @@ struct VideoPickerView: View {
                         subtitle: "Capture video with camera",
                         color: .red
                     ) {
-                        // Open camera
-                        dismiss()
+                        handleCameraSelection()
                     }
-                    
+
                     ImportOptionCard(
                         icon: "photo.on.rectangle",
                         title: "Photo Library",
                         subtitle: "Choose from your videos",
                         color: .blue
                     ) {
-                        // Open photo library
-                        if let url = URL(string: "sample_video.mp4") {
-                            onVideoSelected?(url)
-                        }
-                        dismiss()
-                    }
-                    
-                    ImportOptionCard(
-                        icon: "icloud.and.arrow.down",
-                        title: "iCloud Drive",
-                        subtitle: "Import from cloud storage",
-                        color: .green
-                    ) {
-                        // Open iCloud picker
-                        dismiss()
+                        handleLibrarySelection()
                     }
                 }
                 .padding(.horizontal)
-                
+
                 Spacer()
             }
             .padding()
@@ -64,6 +58,80 @@ struct VideoPickerView: View {
                     .foregroundColor(.white)
                 }
             }
+            .photosPicker(isPresented: $showingLibrary, selection: $selectedItem, matching: .videos)
+            .sheet(isPresented: $showingCamera) {
+                CameraCaptureView { url in
+                    onVideoSelected?(url)
+                    dismiss()
+                }
+            }
+            .onChange(of: selectedItem) { _ in
+                Task { await loadSelectedItem() }
+            }
+            .alert("Permission Error", isPresented: $showingError) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(errorMessage)
+            }
+        }
+    }
+
+    private func handleLibrarySelection() {
+        let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        switch status {
+        case .authorized, .limited:
+            showingLibrary = true
+        case .notDetermined:
+            PHPhotoLibrary.requestAuthorization(for: .readWrite) { newStatus in
+                DispatchQueue.main.async {
+                    if newStatus == .authorized || newStatus == .limited {
+                        showingLibrary = true
+                    } else {
+                        errorMessage = "Photo library access denied"
+                        showingError = true
+                    }
+                }
+            }
+        default:
+            errorMessage = "Photo library access denied"
+            showingError = true
+        }
+    }
+
+    private func handleCameraSelection() {
+        let status = AVCaptureDevice.authorizationStatus(for: .video)
+        switch status {
+        case .authorized:
+            showingCamera = true
+        case .notDetermined:
+            AVCaptureDevice.requestAccess(for: .video) { granted in
+                DispatchQueue.main.async {
+                    if granted {
+                        showingCamera = true
+                    } else {
+                        errorMessage = "Camera access denied"
+                        showingError = true
+                    }
+                }
+            }
+        default:
+            errorMessage = "Camera access denied"
+            showingError = true
+        }
+    }
+
+    private func loadSelectedItem() async {
+        guard let item = selectedItem else { return }
+        do {
+            if let data = try await item.loadTransferable(type: Data.self) {
+                let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).mov")
+                try data.write(to: tempURL)
+                onVideoSelected?(tempURL)
+                dismiss()
+            }
+        } catch {
+            errorMessage = "Failed to load video"
+            showingError = true
         }
     }
 }
@@ -110,6 +178,104 @@ struct ImportOptionCard: View {
     }
 }
 
+struct CameraCaptureView: View {
+    @Environment(\.dismiss) private var dismiss
+    var onVideoCaptured: (URL) -> Void
+    @StateObject private var recorder = CameraRecorder()
+
+    var body: some View {
+        ZStack {
+            CameraPreview(session: recorder.session)
+                .ignoresSafeArea()
+
+            VStack {
+                Spacer()
+
+                Button(action: {
+                    if recorder.isRecording {
+                        recorder.stopRecording()
+                    } else {
+                        recorder.startRecording()
+                    }
+                }) {
+                    Circle()
+                        .fill(recorder.isRecording ? Color.red : Color.white)
+                        .frame(width: 70, height: 70)
+                        .overlay(Circle().stroke(Color.white, lineWidth: 2))
+                }
+                .padding(.bottom, 30)
+            }
+        }
+        .onAppear {
+            recorder.onFinish = { url in
+                onVideoCaptured(url)
+                dismiss()
+            }
+            recorder.configure()
+        }
+        .onDisappear {
+            recorder.stopSession()
+        }
+    }
+}
+
+final class CameraRecorder: NSObject, ObservableObject, AVCaptureFileOutputRecordingDelegate {
+    let session = AVCaptureSession()
+    private let output = AVCaptureMovieFileOutput()
+    @Published var isRecording = false
+    var onFinish: ((URL) -> Void)?
+
+    func configure() {
+        session.beginConfiguration()
+        if let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back),
+           let input = try? AVCaptureDeviceInput(device: device),
+           session.canAddInput(input) {
+            session.addInput(input)
+        }
+        if session.canAddOutput(output) {
+            session.addOutput(output)
+        }
+        session.commitConfiguration()
+        session.startRunning()
+    }
+
+    func startRecording() {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).mov")
+        output.startRecording(to: url, recordingDelegate: self)
+        isRecording = true
+    }
+
+    func stopRecording() {
+        output.stopRecording()
+    }
+
+    func stopSession() {
+        session.stopRunning()
+    }
+
+    func fileOutput(_ output: AVCaptureFileOutput, didFinishRecordingTo outputFileURL: URL, from connections: [AVCaptureConnection], error: Error?) {
+        isRecording = false
+        if error == nil {
+            onFinish?(outputFileURL)
+        }
+    }
+}
+
+struct CameraPreview: UIViewRepresentable {
+    let session: AVCaptureSession
+
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView(frame: .zero)
+        let layer = AVCaptureVideoPreviewLayer(session: session)
+        layer.videoGravity = .resizeAspectFill
+        layer.frame = UIScreen.main.bounds
+        view.layer.addSublayer(layer)
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {}
+}
+
 struct TemplatesView: View {
     @StateObject private var viewModel = TemplatesViewModel()
 
@@ -152,30 +318,6 @@ struct TemplatesView: View {
         }
     }
 }
-
-enum TemplateCategory: String, CaseIterable {
-    case trending = "Trending"
-    case educational = "Educational"
-    case business = "Business"
-    case lifestyle = "Lifestyle"
-    
-    var icon: String {
-        switch self {
-        case .trending: return "flame.fill"
-        case .educational: return "graduationcap.fill"
-        case .business: return "briefcase.fill"
-        case .lifestyle: return "heart.fill"
-        }
-    }
-}
-
-struct Template: Identifiable {
-    let id = UUID()
-    let name: String
-    let category: TemplateCategory
-    let thumbnail: String
-}
-
 struct CategoryButton: View {
     let category: TemplateCategory
     let isSelected: Bool
@@ -236,6 +378,7 @@ struct TemplateCard: View {
 struct ProfileView: View {
     @EnvironmentObject var appState: AppState
     @State private var showingSettings = false
+    @State private var showingPurchaseError = false
     
     var body: some View {
         NavigationView {
@@ -270,16 +413,32 @@ struct ProfileView: View {
                             Text("Upgrade to Pro")
                                 .font(.headline)
                                 .foregroundColor(.white)
-                            
+
                             Text("Unlock unlimited exports, premium templates, and AI features")
                                 .font(.subheadline)
                                 .foregroundColor(.gray)
                                 .multilineTextAlignment(.center)
-                            
+
                             Button("Upgrade Now") {
-                                // Show upgrade options
+                                Task {
+                                    let success = await appState.subscriptionManager.purchase()
+                                    if !success {
+                                        showingPurchaseError = true
+                                    }
+                                }
                             }
                             .buttonStyle(PrimaryButtonStyle())
+
+                            Button("Restore Purchases") {
+                                Task {
+                                    let success = await appState.subscriptionManager.restorePurchases()
+                                    if !success {
+                                        showingPurchaseError = true
+                                    }
+                                }
+                            }
+                            .font(.footnote)
+                            .foregroundColor(.purple)
                         }
                         .padding()
                         .background(Color.gray.opacity(0.1))
@@ -297,7 +456,7 @@ struct ProfileView: View {
                         ProfileMenuItem(
                             icon: "square.and.arrow.up",
                             title: "Export History",
-                            subtitle: "Track your exports"
+                            subtitle: "Track your exports \(appState.exportCount)"
                         )
                         
                         ProfileMenuItem(
@@ -331,6 +490,11 @@ struct ProfileView: View {
         }
         .sheet(isPresented: $showingSettings) {
             SettingsView()
+        }
+        .alert("Transaction Failed", isPresented: $showingPurchaseError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(appState.subscriptionManager.lastError ?? "Unknown error")
         }
     }
 }
@@ -463,6 +627,7 @@ struct ExportOptionsView: View {
                                     isPremium: quality == .ultra && !appState.isPremiumUser
                                 ) {
                                     if quality == .ultra && !appState.isPremiumUser {
+                                        AnalyticsManager.shared.logPaywallView()
                                         // Show upgrade prompt
                                     } else {
                                         selectedQuality = quality
@@ -620,6 +785,7 @@ struct ExportOptionsView: View {
                     break
                 }
             }
+
         }
     }
 }
@@ -740,4 +906,6 @@ struct QualityOption: View {
 #Preview {
     VideoPickerView()
 }
+
+#endif
 

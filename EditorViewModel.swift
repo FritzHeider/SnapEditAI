@@ -12,6 +12,7 @@ class EditorViewModel: ObservableObject {
     @Published var duration: Double = 100
     @Published var selectedTool: EditorTool = .trim
     @Published var showingExportOptions = false
+    @Published var showingPurchaseError = false
 
     func createNewProject(with videoURL: URL, appState: AppState) {
         let project = VideoProject(
@@ -20,11 +21,19 @@ class EditorViewModel: ObservableObject {
         )
         currentProject = project
         appState.currentProject = project
+        appState.projects.append(project)
     }
 
     func export(appState: AppState) {
         if appState.canExport {
             showingExportOptions = true
+        } else {
+            Task {
+                let success = await appState.subscriptionManager.purchase()
+                if !success {
+                    showingPurchaseError = true
+                }
+            }
         }
     }
 }

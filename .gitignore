@@ -1,6 +1,7 @@
 # Xcode build and user files
 DerivedData/
 build/
+.build/
 
 # Sensitive configuration
 Config.plist
@@ -8,3 +9,4 @@ Config.plist
 
 # macOS
 .DS_Store
+SnapEditAI/

@@ -26,3 +26,26 @@ class TemplatesViewModel: ObservableObject {
         // Placeholder for API call to fetch templates
     }
 }
+
+enum TemplateCategory: String, CaseIterable {
+    case trending = "Trending"
+    case educational = "Educational"
+    case business = "Business"
+    case lifestyle = "Lifestyle"
+
+    var icon: String {
+        switch self {
+        case .trending: return "flame.fill"
+        case .educational: return "graduationcap.fill"
+        case .business: return "briefcase.fill"
+        case .lifestyle: return "heart.fill"
+        }
+    }
+}
+
+struct Template: Identifiable {
+    let id = UUID()
+    let name: String
+    let category: TemplateCategory
+    let thumbnail: String
+}

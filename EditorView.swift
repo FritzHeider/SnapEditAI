@@ -1,3 +1,4 @@
+#if canImport(SwiftUI)
 import SwiftUI
 import AVFoundation
 
@@ -27,7 +28,8 @@ struct EditorView: View {
                     // Tools Section
                     ToolsSection(
                         selectedTool: $viewModel.selectedTool,
-                        project: project
+                        project: project,
+                        viewModel: viewModel
                     )
                     
                     // Bottom Actions
@@ -58,23 +60,19 @@ struct EditorView: View {
                 ExportOptionsView(project: project)
             }
         }
-    }
-}
-
-enum EditorTool: String, CaseIterable {
-    case trim = "Trim"
-    case captions = "Captions"
-    case effects = "Effects"
-    case filters = "Filters"
-    case audio = "Audio"
-    
-    var icon: String {
-        switch self {
-        case .trim: return "scissors"
-        case .captions: return "text.bubble"
-        case .effects: return "wand.and.stars"
-        case .filters: return "camera.filters"
-        case .audio: return "speaker.wave.2"
+        .onAppear {
+            if viewModel.currentProject == nil {
+                viewModel.currentProject = appState.currentProject
+            }
+        }
+        .onChange(of: viewModel.currentProject) { newValue in
+            appState.currentProject = newValue
+        }
+        .alert("Purchase Failed", isPresented: $viewModel.showingPurchaseError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(appState.subscriptionManager.lastError ?? "Unknown error")
+        }
         }
     }
 }
@@ -132,7 +130,6 @@ struct VideoPreviewSection: View {
         .padding(.horizontal)
     }
 }
-
 struct TimelineSection: View {
     @Binding var currentTime: Double
     let duration: Double
@@ -190,7 +187,8 @@ struct TimelineSection: View {
 struct ToolsSection: View {
     @Binding var selectedTool: EditorTool
     let project: VideoProject
-    
+    @ObservedObject var viewModel: EditorViewModel
+
     var body: some View {
         VStack(spacing: 16) {
             // Tool Selector
@@ -214,13 +212,13 @@ struct ToolsSection: View {
                 case .trim:
                     TrimToolView()
                 case .captions:
-                    CaptionsToolView(project: project)
+                    CaptionsToolView(project: project, viewModel: viewModel)
                 case .effects:
-                    EffectsToolView()
+                    EffectsToolView(viewModel: viewModel)
                 case .filters:
-                    FiltersToolView()
+                    FiltersToolView(viewModel: viewModel)
                 case .audio:
-                    AudioToolView()
+                    AudioToolView(viewModel: viewModel)
                 }
             }
             .frame(height: 120)
@@ -285,23 +283,39 @@ struct TrimToolView: View {
 
 struct CaptionsToolView: View {
     let project: VideoProject
+    @ObservedObject var viewModel: EditorViewModel
+    @EnvironmentObject var appState: AppState
     @State private var selectedStyle: CaptionStyle = .viral
-    
+    @State private var isLoading = false
+    @State private var errorMessage: String?
+
     var body: some View {
         VStack(spacing: 12) {
             HStack {
                 Text("AI Captions")
                     .font(.headline)
                     .foregroundColor(.white)
-                
+
                 Spacer()
-                
+
+                if isLoading {
+                    ProgressView()
+                        .tint(.white)
+                }
+
                 Button("Generate") {
-                    // Generate AI captions
+                    generateCaptions()
                 }
                 .buttonStyle(ToolActionButtonStyle())
+                .disabled(isLoading)
             }
-            
+
+            if let errorMessage = errorMessage {
+                Text(errorMessage)
+                    .font(.caption)
+                    .foregroundColor(.red)
+            }
+
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     ForEach(CaptionStyle.allCases, id: \.self) { style in
@@ -321,23 +335,84 @@ struct CaptionsToolView: View {
             }
         }
     }
+
+    private func generateCaptions() {
+        guard let url = project.videoURL else { return }
+        isLoading = true
+        errorMessage = nil
+        Task {
+            let service = AICaptionService(openAIKey: appState.openAIKey, whisperKey: appState.whisperKey)
+            do {
+                let captions = try await service.generateCaptions(for: url, style: selectedStyle)
+                if var proj = viewModel.currentProject {
+                    proj.captions = captions
+                    viewModel.currentProject = proj
+                }
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+            isLoading = false
+        }
+    }
 }
 
 struct EffectsToolView: View {
+    @ObservedObject var viewModel: EditorViewModel
+    @EnvironmentObject var appState: AppState
+    @State private var isLoading = false
+    @State private var errorMessage: String?
+
     var body: some View {
         VStack {
             Text("Effects & Transitions")
                 .font(.headline)
                 .foregroundColor(.white)
-            
+
+            if isLoading {
+                ProgressView().tint(.white)
+            }
+
+            if let errorMessage = errorMessage {
+                Text(errorMessage)
+                    .font(.caption)
+                    .foregroundColor(.red)
+            }
+
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
-                    EffectButton(name: "Zoom In", icon: "plus.magnifyingglass")
-                    EffectButton(name: "Fade", icon: "circle.dotted")
-                    EffectButton(name: "Slide", icon: "arrow.right")
-                    EffectButton(name: "Spin", icon: "arrow.clockwise")
+                    EffectButton(name: "Zoom In", icon: "plus.magnifyingglass") {
+                        applyEffect("Zoom In")
+                    }
+                    EffectButton(name: "Fade", icon: "circle.dotted") {
+                        applyEffect("Fade")
+                    }
+                    EffectButton(name: "Slide", icon: "arrow.right") {
+                        applyEffect("Slide")
+                    }
+                    EffectButton(name: "Spin", icon: "arrow.clockwise") {
+                        applyEffect("Spin")
+                    }
                 }
             }
+        }
+    }
+
+    private func applyEffect(_ name: String) {
+        guard viewModel.currentProject != nil else { return }
+        isLoading = true
+        errorMessage = nil
+        Task {
+            let service = AIEditingService(openAIKey: appState.openAIKey)
+            do {
+                let effect = try await service.applyEffect(name)
+                if var proj = viewModel.currentProject {
+                    proj.effects.append(effect)
+                    viewModel.currentProject = proj
+                }
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+            isLoading = false
         }
     }
 }
@@ -345,15 +420,14 @@ struct EffectsToolView: View {
 struct EffectButton: View {
     let name: String
     let icon: String
-    
+    let action: () -> Void
+
     var body: some View {
-        Button(action: {
-            // Apply effect
-        }) {
+        Button(action: action) {
             VStack(spacing: 4) {
                 Image(systemName: icon)
                     .font(.title3)
-                
+
                 Text(name)
                     .font(.caption2)
             }
@@ -366,17 +440,34 @@ struct EffectButton: View {
 }
 
 struct FiltersToolView: View {
+    @ObservedObject var viewModel: EditorViewModel
+    @EnvironmentObject var appState: AppState
+    @State private var isLoading = false
+    @State private var errorMessage: String?
+
+    private let filters = ["Cinematic", "Vintage", "Neon", "B&W", "Warm"]
+
     var body: some View {
         VStack {
             Text("Viral Filters")
                 .font(.headline)
                 .foregroundColor(.white)
-            
+
+            if isLoading {
+                ProgressView().tint(.white)
+            }
+
+            if let errorMessage = errorMessage {
+                Text(errorMessage)
+                    .font(.caption)
+                    .foregroundColor(.red)
+            }
+
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                    ForEach(["Cinematic", "Vintage", "Neon", "B&W", "Warm"], id: \.self) { filter in
+                    ForEach(filters, id: \.self) { filter in
                         Button(filter) {
-                            // Apply filter
+                            applyFilter(filter)
                         }
                         .font(.caption)
                         .padding(.horizontal, 12)
@@ -389,31 +480,80 @@ struct FiltersToolView: View {
             }
         }
     }
+
+    private func applyFilter(_ filter: String) {
+        guard viewModel.currentProject != nil else { return }
+        isLoading = true
+        errorMessage = nil
+        Task {
+            let service = AIEditingService(openAIKey: appState.openAIKey)
+            do {
+                let effect = try await service.applyFilter(filter)
+                if var proj = viewModel.currentProject {
+                    proj.effects.append(effect)
+                    viewModel.currentProject = proj
+                }
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+            isLoading = false
+        }
+    }
 }
 
 struct AudioToolView: View {
+    @ObservedObject var viewModel: EditorViewModel
+    @EnvironmentObject var appState: AppState
+    @State private var isLoading = false
+    @State private var errorMessage: String?
+
     var body: some View {
         VStack {
             Text("Audio")
                 .font(.headline)
                 .foregroundColor(.white)
-            
+
+            if isLoading {
+                ProgressView().tint(.white)
+            }
+
+            if let errorMessage = errorMessage {
+                Text(errorMessage)
+                    .font(.caption)
+                    .foregroundColor(.red)
+            }
+
             HStack(spacing: 12) {
                 Button("Add Music") {
-                    // Add background music
+                    perform(.addMusic)
                 }
                 .buttonStyle(ToolActionButtonStyle())
-                
+
                 Button("Voice Enhance") {
-                    // Enhance voice quality
+                    perform(.enhanceVoice)
                 }
                 .buttonStyle(ToolActionButtonStyle())
-                
+
                 Button("Remove Noise") {
-                    // Remove background noise
+                    perform(.removeNoise)
                 }
                 .buttonStyle(ToolActionButtonStyle())
             }
+        }
+    }
+
+    private func perform(_ enhancement: AIEditingService.AudioEnhancement) {
+        guard viewModel.currentProject != nil else { return }
+        isLoading = true
+        errorMessage = nil
+        Task {
+            let service = AIEditingService(openAIKey: appState.openAIKey)
+            do {
+                try await service.enhanceAudio(enhancement)
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+            isLoading = false
         }
     }
 }
@@ -436,7 +576,6 @@ struct BottomActionsSection: View {
                 viewModel.export(appState: appState)
             }
             .buttonStyle(PrimaryActionButtonStyle())
-            .disabled(!appState.canExport)
         }
         .padding(.horizontal)
         .padding(.vertical, 16)
@@ -524,4 +663,6 @@ struct SecondaryActionButtonStyle: ButtonStyle {
     EditorView()
         .environmentObject(AppState())
 }
+
+#endif
 

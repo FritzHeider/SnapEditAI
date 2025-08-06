@@ -8,17 +8,21 @@ class TemplatesViewModel: ObservableObject {
     @Published var templates: [Template]
     @Published var trendingTracks: [TrendingTrack] = []
 
-    private let trendService = TrendService()
+    private let trendService: TrendService
 
-    init(templates: [Template] = [
+    init(
+        templates: [Template] = [
         Template(name: "Viral Hook", category: .trending, thumbnail: "play.rectangle.fill"),
         Template(name: "Storytime", category: .trending, thumbnail: "text.bubble.fill"),
         Template(name: "Tutorial", category: .educational, thumbnail: "graduationcap.fill"),
         Template(name: "Product Review", category: .business, thumbnail: "star.fill"),
         Template(name: "GRWM", category: .lifestyle, thumbnail: "person.fill"),
         Template(name: "Recipe", category: .lifestyle, thumbnail: "fork.knife")
-    ]) {
+    ],
+        trendService: TrendService = TrendService()
+    ) {
         self.templates = templates
+        self.trendService = trendService
     }
 
     var filteredTemplates: [Template] {

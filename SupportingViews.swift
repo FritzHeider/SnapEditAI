@@ -277,7 +277,11 @@ struct CameraPreview: UIViewRepresentable {
 }
 
 struct TemplatesView: View {
-    @StateObject private var viewModel = TemplatesViewModel()
+    @StateObject private var viewModel: TemplatesViewModel
+
+    init(viewModel: TemplatesViewModel = TemplatesViewModel()) {
+        _viewModel = StateObject(wrappedValue: viewModel)
+    }
 
     var body: some View {
         NavigationView {
@@ -298,6 +302,29 @@ struct TemplatesView: View {
                 }
                 .padding(.vertical)
                 .background(Color.gray.opacity(0.05))
+
+                // Trending Tracks
+                if !viewModel.trendingTracks.isEmpty {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 12) {
+                            ForEach(viewModel.trendingTracks, id: \.title) { track in
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(track.title)
+                                        .font(.subheadline)
+                                        .foregroundColor(.white)
+                                    Text(track.artist)
+                                        .font(.caption)
+                                        .foregroundColor(.gray)
+                                }
+                                .padding(8)
+                                .background(Color.gray.opacity(0.2))
+                                .cornerRadius(8)
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
+                    .padding(.vertical)
+                }
 
                 // Templates Grid
                 ScrollView {

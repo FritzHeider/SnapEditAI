@@ -1,5 +1,6 @@
 import Foundation
 
+@MainActor
 final class PersistenceManager {
     static let shared = PersistenceManager()
     private let defaults: UserDefaults

@@ -6,16 +6,23 @@ import Combine
 class TemplatesViewModel: ObservableObject {
     @Published var selectedCategory: TemplateCategory = .trending
     @Published var templates: [Template]
+    @Published var trendingTracks: [TrendingTrack] = []
 
-    init(templates: [Template] = [
+    private let trendService: TrendService
+
+    init(
+        templates: [Template] = [
         Template(name: "Viral Hook", category: .trending, thumbnail: "play.rectangle.fill"),
         Template(name: "Storytime", category: .trending, thumbnail: "text.bubble.fill"),
         Template(name: "Tutorial", category: .educational, thumbnail: "graduationcap.fill"),
         Template(name: "Product Review", category: .business, thumbnail: "star.fill"),
         Template(name: "GRWM", category: .lifestyle, thumbnail: "person.fill"),
         Template(name: "Recipe", category: .lifestyle, thumbnail: "fork.knife")
-    ]) {
+    ],
+        trendService: TrendService = TrendService()
+    ) {
         self.templates = templates
+        self.trendService = trendService
     }
 
     var filteredTemplates: [Template] {
@@ -24,6 +31,15 @@ class TemplatesViewModel: ObservableObject {
 
     func fetchTemplates() {
         // Placeholder for API call to fetch templates
+    }
+
+    @MainActor
+    func fetchTrendingAudio() async {
+        do {
+            trendingTracks = try await trendService.fetchTrendingTracks()
+        } catch {
+            print("⚠️ Failed to fetch trending tracks: \(error)")
+        }
     }
 }
 

@@ -3,6 +3,7 @@ import Foundation
 import Combine
 #endif
 
+@MainActor
 class AppState: ObservableObject {
     @Published var isOnboardingComplete = false
     @Published var isPremiumUser: Bool {
@@ -17,6 +18,8 @@ class AppState: ObservableObject {
     }
 
     let maxFreeExports = 3
+
+    let subscriptionManager = SubscriptionManager.shared
 
     // API keys loaded from secure Config.plist
     let openAIKey: String

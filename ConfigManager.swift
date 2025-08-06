@@ -3,6 +3,7 @@ import Foundation
 /// Loads configuration values from `Config.plist`, a local `.env` file, or
 /// environment variables. Values loaded later override earlier ones, giving
 /// precedence to environment variables for secure overrides.
+@MainActor
 final class ConfigManager {
     static let shared = ConfigManager()
     private var config: [String: String] = [:]
@@ -41,7 +42,7 @@ final class ConfigManager {
 
     /// Testing initializer that allows injecting a custom configuration dictionary.
     /// This enables unit tests to supply mock values without relying on a real plist file.
-    init(testingConfig: [String: Any]) {
+    init(testingConfig: [String: String]) {
         self.config = testingConfig
     }
 

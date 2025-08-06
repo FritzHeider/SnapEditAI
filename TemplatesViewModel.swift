@@ -6,6 +6,9 @@ import Combine
 class TemplatesViewModel: ObservableObject {
     @Published var selectedCategory: TemplateCategory = .trending
     @Published var templates: [Template]
+    @Published var trendingTracks: [TrendingTrack] = []
+
+    private let trendService = TrendService()
 
     init(templates: [Template] = [
         Template(name: "Viral Hook", category: .trending, thumbnail: "play.rectangle.fill"),
@@ -24,6 +27,15 @@ class TemplatesViewModel: ObservableObject {
 
     func fetchTemplates() {
         // Placeholder for API call to fetch templates
+    }
+
+    @MainActor
+    func fetchTrendingAudio() async {
+        do {
+            trendingTracks = try await trendService.fetchTrendingTracks()
+        } catch {
+            print("⚠️ Failed to fetch trending tracks: \(error)")
+        }
     }
 }
 

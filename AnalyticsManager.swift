@@ -10,6 +10,7 @@ import FirebaseCrashlytics
 #endif
 
 /// Centralized helper for analytics and crash reporting.
+@MainActor
 final class AnalyticsManager {
     static let shared = AnalyticsManager()
     private init() {}

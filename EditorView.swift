@@ -73,7 +73,6 @@ struct EditorView: View {
         } message: {
             Text(appState.subscriptionManager.lastError ?? "Unknown error")
         }
-        }
     }
 }
 

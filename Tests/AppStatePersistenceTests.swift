@@ -2,22 +2,22 @@ import XCTest
 @testable import SnapEditAI
 
 final class AppStatePersistenceTests: XCTestCase {
-    override func tearDown() {
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent("appstate.json")
-        try? FileManager.default.removeItem(at: url)
-        super.tearDown()
-    }
+    func testRoundTripPersistence() async {
+        await MainActor.run {
+            let suiteName = "AppStateTests"
+            let defaults = UserDefaults(suiteName: suiteName)!
+            defaults.removePersistentDomain(forName: suiteName)
 
-    func testSaveAndLoadState() throws {
-        let state = AppState()
-        state.isOnboardingComplete = true
-        state.isPremiumUser = true
-        state.exportCount = 2
-        try state.save()
+            let persistence = PersistenceManager(userDefaults: defaults)
+            let state = AppState(persistence: persistence)
+            state.isPremiumUser = true
+            state.exportCount = 2
+            state.projects = [VideoProject(title: "Demo")]
 
-        let loaded = AppState.load()
-        XCTAssertTrue(loaded.isOnboardingComplete)
-        XCTAssertTrue(loaded.isPremiumUser)
-        XCTAssertEqual(loaded.exportCount, 2)
+            let reloaded = AppState(persistence: PersistenceManager(userDefaults: defaults))
+            XCTAssertTrue(reloaded.isPremiumUser)
+            XCTAssertEqual(reloaded.exportCount, 2)
+            XCTAssertEqual(reloaded.projects.count, 1)
+        }
     }
 }

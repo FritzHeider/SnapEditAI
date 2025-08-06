@@ -1,4 +1,7 @@
 import XCTest
+
+#if canImport(SwiftUI)
+import SwiftUI
 import ViewInspector
 @testable import SnapEditAI
 
@@ -17,3 +20,4 @@ final class ViewTests: XCTestCase {
         XCTAssertEqual(title, "Editor")
     }
 }
+#endif

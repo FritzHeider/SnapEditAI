@@ -8,37 +8,40 @@ struct EditorView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 0) {
-                if let project = viewModel.currentProject {
-                    // Video Preview
-                    VideoPreviewSection(
-                        project: project,
-                        isPlaying: $viewModel.isPlaying,
-                        currentTime: $viewModel.currentTime,
-                        duration: $viewModel.duration
-                    )
-                    
-                    // Timeline
-                    TimelineSection(
-                        currentTime: $viewModel.currentTime,
-                        duration: viewModel.duration,
-                        project: project
-                    )
-                    
-                    // Tools Section
-                    ToolsSection(
-                        selectedTool: $viewModel.selectedTool,
-                        project: project,
-                        viewModel: viewModel
-                    )
-                    
-                    // Bottom Actions
-                    BottomActionsSection(project: project, viewModel: viewModel)
-                } else {
-                    EmptyEditorState(showingVideoPicker: $viewModel.showingVideoPicker)
+            ZStack {
+                AppBackground()
+
+                VStack(spacing: 0) {
+                    if let project = viewModel.currentProject {
+                        // Video Preview
+                        VideoPreviewSection(
+                            project: project,
+                            isPlaying: $viewModel.isPlaying,
+                            currentTime: $viewModel.currentTime,
+                            duration: $viewModel.duration
+                        )
+
+                        // Timeline
+                        TimelineSection(
+                            currentTime: $viewModel.currentTime,
+                            duration: viewModel.duration,
+                            project: project
+                        )
+
+                        // Tools Section
+                        ToolsSection(
+                            selectedTool: $viewModel.selectedTool,
+                            project: project,
+                            viewModel: viewModel
+                        )
+
+                        // Bottom Actions
+                        BottomActionsSection(project: project, viewModel: viewModel)
+                    } else {
+                        EmptyEditorState(showingVideoPicker: $viewModel.showingVideoPicker)
+                    }
                 }
             }
-            .background(Color.black)
             .navigationTitle("Editor")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -83,33 +86,60 @@ struct VideoPreviewSection: View {
     @Binding var duration: Double
     
     var body: some View {
-        ZStack {
-            // Video Player Placeholder
+        ZStack(alignment: .topLeading) {
             Rectangle()
-                .fill(Color.gray.opacity(0.3))
+                .fill(
+                    LinearGradient(
+                        colors: [Color.gray.opacity(0.4), Color.black],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
                 .aspectRatio(9/16, contentMode: .fit)
                 .overlay(
-                    VStack {
+                    VStack(spacing: 12) {
                         if let url = project.videoURL {
-                            Text("Video: \(url.lastPathComponent)")
+                            Text("Now Editing • \(url.lastPathComponent)")
                                 .font(.caption)
-                                .foregroundColor(.white)
+                                .foregroundColor(.white.opacity(0.7))
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(Color.black.opacity(0.35))
+                                .clipShape(Capsule())
                         }
-                        
+
                         Button(action: {
                             isPlaying.toggle()
                         }) {
                             Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                                .font(.system(size: 60))
+                                .font(.system(size: 64))
                                 .foregroundColor(.white)
+                                .shadow(color: Color.black.opacity(0.4), radius: 8, x: 0, y: 6)
                         }
                     }
                 )
-            
-            // Captions Overlay
+
+            HStack(spacing: 8) {
+                Label("Auto Captions", systemImage: "captions.bubble.fill")
+                    .font(.caption)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Color.purple.opacity(0.8))
+                    .clipShape(Capsule())
+                Label("4K", systemImage: "sparkles.tv")
+                    .font(.caption)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Color.white.opacity(0.12))
+                    .clipShape(Capsule())
+            }
+            .padding(12)
+
             VStack {
                 Spacer()
-                
+
                 ForEach(project.captions.filter { caption in
                     currentTime >= caption.startTime && currentTime <= caption.endTime
                 }) { caption in
@@ -120,12 +150,12 @@ struct VideoPreviewSection: View {
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
                         .background(Color.black.opacity(0.7))
-                        .cornerRadius(8)
+                        .cornerRadius(10)
                 }
                 .padding(.bottom, 20)
             }
         }
-        .cornerRadius(12)
+        .cornerRadius(18)
         .padding(.horizontal)
     }
 }
@@ -136,7 +166,6 @@ struct TimelineSection: View {
     
     var body: some View {
         VStack(spacing: 12) {
-            // Time Scrubber
             VStack(spacing: 8) {
                 HStack {
                     Text(formatTime(currentTime))
@@ -154,7 +183,6 @@ struct TimelineSection: View {
                     .accentColor(.purple)
             }
             
-            // Timeline Tracks
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 4) {
                     ForEach(0..<Int(duration/5), id: \.self) { index in
@@ -168,12 +196,14 @@ struct TimelineSection: View {
                             )
                     }
                 }
-                .padding(.horizontal)
+                .padding(.horizontal, 12)
             }
         }
         .padding(.horizontal)
-        .padding(.vertical, 8)
-        .background(Color.gray.opacity(0.1))
+        .padding(.vertical, 12)
+        .background(Color.white.opacity(0.05))
+        .cornerRadius(16)
+        .padding(.horizontal)
     }
     
     private func formatTime(_ time: Double) -> String {
@@ -190,7 +220,6 @@ struct ToolsSection: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            // Tool Selector
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
                     ForEach(EditorTool.allCases, id: \.self) { tool in
@@ -205,7 +234,6 @@ struct ToolsSection: View {
                 .padding(.horizontal)
             }
             
-            // Tool Content
             Group {
                 switch selectedTool {
                 case .trim:
@@ -223,8 +251,10 @@ struct ToolsSection: View {
             .frame(height: 120)
             .padding(.horizontal)
         }
-        .padding(.vertical)
-        .background(Color.gray.opacity(0.05))
+        .padding(.vertical, 16)
+        .background(Color.white.opacity(0.04))
+        .cornerRadius(20)
+        .padding(.horizontal)
     }
 }
 
@@ -247,7 +277,11 @@ struct ToolButton: View {
             .padding(.vertical, 8)
             .background(
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(isSelected ? Color.purple.opacity(0.2) : Color.clear)
+                    .fill(isSelected ? Color.purple.opacity(0.2) : Color.white.opacity(0.06))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color.white.opacity(isSelected ? 0.2 : 0.08), lineWidth: 1)
             )
         }
     }
@@ -564,21 +598,25 @@ struct BottomActionsSection: View {
 
     var body: some View {
         HStack(spacing: 16) {
-            Button("Preview") {
+            Button {
                 // Preview video
+            } label: {
+                Label("Preview", systemImage: "play.circle")
             }
             .buttonStyle(SecondaryActionButtonStyle())
 
             Spacer()
 
-            Button("Export") {
+            Button {
                 viewModel.export(appState: appState)
+            } label: {
+                Label("Export", systemImage: "square.and.arrow.up")
             }
             .buttonStyle(PrimaryActionButtonStyle())
         }
         .padding(.horizontal)
         .padding(.vertical, 16)
-        .background(Color.black)
+        .background(Color.black.opacity(0.7))
     }
 }
 
@@ -610,6 +648,8 @@ struct EmptyEditorState: View {
             .frame(width: 200)
         }
         .padding()
+        .glassCard(cornerRadius: 24)
+        .padding(.horizontal)
     }
 }
 
@@ -619,7 +659,13 @@ struct ToolActionButtonStyle: ButtonStyle {
             .font(.caption)
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
-            .background(Color.purple)
+            .background(
+                LinearGradient(
+                    colors: [Color.purple, Color.pink.opacity(0.8)],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
             .foregroundColor(.white)
             .cornerRadius(8)
             .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
@@ -652,7 +698,7 @@ struct SecondaryActionButtonStyle: ButtonStyle {
             .foregroundColor(.white)
             .padding(.horizontal, 32)
             .padding(.vertical, 12)
-            .background(Color.gray.opacity(0.3))
+            .background(Color.white.opacity(0.12))
             .cornerRadius(25)
             .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
     }
@@ -664,4 +710,3 @@ struct SecondaryActionButtonStyle: ButtonStyle {
 }
 
 #endif
-

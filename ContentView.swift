@@ -61,20 +61,23 @@ struct HomeView: View {
 
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(spacing: 20) {
-                    headerSection
-                    quickActionsSection
-                    recentProjectsSection
+            ZStack {
+                AppBackground()
 
-                    if !appState.isPremiumUser {
-                        UsageStatsCard()
-                            .padding(.horizontal)
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 24) {
+                        headerSection
+                        quickActionsSection
+                        recentProjectsSection
+
+                        if !appState.isPremiumUser {
+                            UsageStatsCard()
+                                .padding(.horizontal)
+                        }
                     }
+                    .padding(.vertical, 24)
                 }
-                .padding(.vertical)
             }
-            .background(Color.black)
             .navigationBarHidden(true)
         }
         .sheet(isPresented: $showingVideoPicker) {
@@ -88,17 +91,23 @@ struct HomeView: View {
     }
 
     private var headerSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("SnapEdit AI")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .foregroundColor(.white)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Good to see you")
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+
+                    Text("SnapEdit AI")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .foregroundColor(.white)
+                }
 
                 Spacer()
 
                 if !appState.isPremiumUser {
-                    Button("Go Pro") {
+                    Button {
                         AnalyticsManager.shared.logPaywallView()
                         Task {
                             let success = await appState.subscriptionManager.purchase()
@@ -106,9 +115,16 @@ struct HomeView: View {
                                 showingPurchaseError = true
                             }
                         }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "sparkles")
+                            Text("Go Pro")
+                        }
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
                     .background(
                         LinearGradient(
                             colors: [.purple, .pink],
@@ -117,7 +133,8 @@ struct HomeView: View {
                         )
                     )
                     .foregroundColor(.white)
-                    .cornerRadius(20)
+                    .clipShape(Capsule())
+                    .shadow(color: Color.purple.opacity(0.4), radius: 8, x: 0, y: 6)
                 }
             }
 
@@ -133,19 +150,32 @@ struct HomeView: View {
             Button(action: {
                 showingVideoPicker = true
             }) {
-                HStack {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.title2)
-                    Text("Create New Video")
-                        .font(.headline)
+                HStack(spacing: 12) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.purple.opacity(0.2))
+                            .frame(width: 44, height: 44)
+                        Image(systemName: "plus")
+                            .font(.title2)
+                            .foregroundColor(.purple)
+                    }
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Create New Video")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                        Text("Start with a clip or record instantly")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                    }
+
                     Spacer()
-                    Image(systemName: "chevron.right")
+
+                    Image(systemName: "arrow.up.right")
+                        .foregroundColor(.white)
                 }
-                .padding()
-                .background(Color.gray.opacity(0.1))
-                .cornerRadius(12)
             }
-            .foregroundColor(.white)
+            .glassCard()
 
             HStack(spacing: 12) {
                 QuickActionCard(icon: "camera.fill", title: "Record", subtitle: "New video")
@@ -166,7 +196,12 @@ struct HomeView: View {
                 Button("See All") {
                     // Implement "See All" action
                 }
-                .foregroundColor(.purple)
+                .font(.caption)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(Color.white.opacity(0.08))
+                .foregroundColor(.white)
+                .clipShape(Capsule())
             }
             .padding(.horizontal)
 
@@ -203,9 +238,8 @@ struct QuickActionCard: View {
                 .foregroundColor(.gray)
         }
         .frame(maxWidth: .infinity)
-        .padding()
-        .background(Color.gray.opacity(0.1))
-        .cornerRadius(12)
+        .padding(.vertical, 16)
+        .glassCard(cornerRadius: 14)
     }
 }
 
@@ -215,7 +249,13 @@ struct ProjectCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             RoundedRectangle(cornerRadius: 8)
-                .fill(Color.gray.opacity(0.3))
+                .fill(
+                    LinearGradient(
+                        colors: [.purple.opacity(0.6), .black],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
                 .frame(width: 120, height: 80)
                 .overlay(
                     Image(systemName: "play.circle.fill")
@@ -232,6 +272,9 @@ struct ProjectCard: View {
                 .font(.caption2)
                 .foregroundColor(.gray)
         }
+        .padding(10)
+        .background(Color.white.opacity(0.05))
+        .cornerRadius(14)
     }
 }
 
@@ -280,9 +323,7 @@ struct UsageStatsCard: View {
                     .progressViewStyle(LinearProgressViewStyle(tint: .purple))
             }
         }
-        .padding()
-        .background(Color.gray.opacity(0.1))
-        .cornerRadius(12)
+        .glassCard()
     }
 }
 

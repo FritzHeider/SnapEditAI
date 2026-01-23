@@ -18,37 +18,46 @@ struct VideoPickerView: View {
 
     var body: some View {
         NavigationView {
-            VStack(spacing: 20) {
-                Text("Import Video")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .foregroundColor(.white)
+            ZStack {
+                AppBackground()
 
-                VStack(spacing: 16) {
-                    ImportOptionCard(
-                        icon: "camera.fill",
-                        title: "Record New",
-                        subtitle: "Capture video with camera",
-                        color: .red
-                    ) {
-                        handleCameraSelection()
+                VStack(spacing: 20) {
+                    VStack(spacing: 8) {
+                        Text("Import Video")
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+
+                        Text("Bring in a clip to start editing fast.")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
                     }
 
-                    ImportOptionCard(
-                        icon: "photo.on.rectangle",
-                        title: "Photo Library",
-                        subtitle: "Choose from your videos",
-                        color: .blue
-                    ) {
-                        handleLibrarySelection()
+                    VStack(spacing: 16) {
+                        ImportOptionCard(
+                            icon: "camera.fill",
+                            title: "Record New",
+                            subtitle: "Capture video with camera",
+                            color: .red
+                        ) {
+                            handleCameraSelection()
+                        }
+
+                        ImportOptionCard(
+                            icon: "photo.on.rectangle",
+                            title: "Photo Library",
+                            subtitle: "Choose from your videos",
+                            color: .blue
+                        ) {
+                            handleLibrarySelection()
+                        }
                     }
+                    .padding(.horizontal)
+
+                    Spacer()
                 }
-                .padding(.horizontal)
-
-                Spacer()
+                .padding()
             }
-            .padding()
-            .background(Color.black)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -171,9 +180,7 @@ struct ImportOptionCard: View {
                 Image(systemName: "chevron.right")
                     .foregroundColor(.gray)
             }
-            .padding()
-            .background(Color.gray.opacity(0.1))
-            .cornerRadius(12)
+            .glassCard()
         }
     }
 }
@@ -935,4 +942,3 @@ struct QualityOption: View {
 }
 
 #endif
-

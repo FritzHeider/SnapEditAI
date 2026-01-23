@@ -27,67 +27,60 @@ struct OnboardingView: View {
     ]
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Page Content
-            TabView(selection: $currentPage) {
-                ForEach(0..<pages.count, id: \.self) { index in
-                    OnboardingPageView(page: pages[index])
-                        .tag(index)
-                }
-            }
-            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
-            .animation(.easeInOut, value: currentPage)
-            
-            // Bottom Section
-            VStack(spacing: 20) {
-                // Page Indicator
-                HStack(spacing: 8) {
+        ZStack {
+            AppBackground()
+
+            VStack(spacing: 0) {
+                TabView(selection: $currentPage) {
                     ForEach(0..<pages.count, id: \.self) { index in
-                        Circle()
-                            .fill(currentPage == index ? Color.white : Color.gray.opacity(0.5))
-                            .frame(width: 8, height: 8)
-                            .animation(.easeInOut, value: currentPage)
+                        OnboardingPageView(page: pages[index])
+                            .tag(index)
                     }
                 }
-                
-                // Action Buttons
-                VStack(spacing: 12) {
-                    if currentPage < pages.count - 1 {
-                        Button("Continue") {
-                            withAnimation {
-                                currentPage += 1
+                .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+                .animation(.easeInOut, value: currentPage)
+
+                VStack(spacing: 20) {
+                    HStack(spacing: 8) {
+                        ForEach(0..<pages.count, id: \.self) { index in
+                            Capsule()
+                                .fill(currentPage == index ? Color.white : Color.gray.opacity(0.4))
+                                .frame(width: currentPage == index ? 20 : 8, height: 8)
+                                .animation(.easeInOut, value: currentPage)
+                        }
+                    }
+
+                    VStack(spacing: 12) {
+                        if currentPage < pages.count - 1 {
+                            Button("Continue") {
+                                withAnimation {
+                                    currentPage += 1
+                                }
                             }
+                            .buttonStyle(PrimaryButtonStyle())
+
+                            Button("Skip") {
+                                completeOnboarding()
+                            }
+                            .buttonStyle(SecondaryButtonStyle())
+                        } else {
+                            Button("Get Started") {
+                                completeOnboarding()
+                            }
+                            .buttonStyle(PrimaryButtonStyle())
+
+                            Button("Start Free Trial") {
+                                appState.isPremiumUser = true
+                                completeOnboarding()
+                            }
+                            .buttonStyle(SecondaryButtonStyle())
                         }
-                        .buttonStyle(PrimaryButtonStyle())
-                        
-                        Button("Skip") {
-                            completeOnboarding()
-                        }
-                        .buttonStyle(SecondaryButtonStyle())
-                    } else {
-                        Button("Get Started") {
-                            completeOnboarding()
-                        }
-                        .buttonStyle(PrimaryButtonStyle())
-                        
-                        Button("Start Free Trial") {
-                            appState.isPremiumUser = true
-                            completeOnboarding()
-                        }
-                        .buttonStyle(SecondaryButtonStyle())
                     }
                 }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 40)
             }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 40)
         }
-        .background(
-            LinearGradient(
-                colors: [Color.black, Color.purple.opacity(0.3)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-        )
         .ignoresSafeArea()
     }
     
@@ -186,4 +179,3 @@ struct SecondaryButtonStyle: ButtonStyle {
 }
 
 #endif
-
